@@ -1,0 +1,52 @@
+
+#' @title Transform Parameter Function into Values by Age Bin
+#'
+#' @description
+#' `aggregate_param` integrates a functional relationship between some model
+#' feature and age, for example case fatality ratio, into static parameter
+#' values for use in a lower-resolution age-binned compartmental model.
+#'
+#' @param f_age a function, `f(a, ...)` which takes age `a` as the first argument
+#' and optionally any other `...`. `f` should be vectorized in `a`
+#'
+#' @param target_bins a vector, the cutoffs for each age bin. For example, a vector
+#' `ages <- c(0, 5, 20, 100)` would correspond to intervals of `[0, 5)`, `[5, 20)`,
+#' and `[20, 100]`. Note the first value is a start (rather than cutoff) and
+#' that upper limits are exclusive, *except* for the final value.
+#'
+#' @param population a data.frame, the population by age.
+#'
+#' @return a vector,
+#'
+#' @export
+aggregate_param <- function(
+  f_age,
+  target_bins,
+  population,
+  ...
+) {
+
+}
+
+#' @title Disaggregate a Compartmental Model Age-Based Outcome
+#'
+#' @description
+#' `disaggregate_value` takes a low-age resolution outcome, for example deaths,
+#' and proportionally distributes that outcome into a higher age resolution for
+#' use in subsequent analyses like years-life-lost style calculations.
+#'
+#' @param value a numeric vector, the model output by age group
+#'
+#' @param f_age the relative rate of the subject outcome, by high
+#' resolution age. Note, this should be the same `f_age` as in [aggregate_param()]
+#' for parameter / outcome pairs - for example, when the outcome is death and
+#' the parameter function is the age-specific case fatality ratio (which would be
+#' aggregated to give single lower age resolution compartmental rates).
+#'
+#' @inheritParams aggregate_param
+#'
+disaggregate_value <- function(
+  value, f_age, target_bins, population, ...
+) {
+
+}
