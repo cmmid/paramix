@@ -1,0 +1,89 @@
+---
+title: "Introductory Usage"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Introductory Usage}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(YLLr)
+library(ggplot2)
+library(data.table)
+library(wpp2019)
+```
+
+The `YLLr` package provides convenient methods to both (1) properly aggregate age-dependent empirical relationships for use in compartmental ODE models with age groups and (2) properly disaggregate outcomes for those groups back to higher resolution by-age values.
+
+The quintessential example is a years-life-lost analysis for a disease that has a highly age-specific mortality rate, such as COVID-19.
+
+Considering the infection-fatality ratio for COVID-19 as found by Levin et al (TODO citation):
+
+```{r}
+ifr_levin <- \(age_in_years) {
+  scaled <- exp(-7.56 + 0.121 * age_in_years)
+  100 * scaled / (100 + scaled) / 100
+}
+dt <- data.table(age = 0:100)
+dt[, ifr := ifr_levin(age)]
+ggplot(dt) + aes(age, ifr) +
+  geom_line() + scale_x_continuous("Age") + scale_y_continuous("Infection Fatality Ratio", trans = "log10") +
+  theme_minimal()
+```
+
+Typically in ODE compartmental models, age groups will be represented at a lower resolution consistent with available data on, for example, contact patterns. For this example, if we want to get the relative mortality of these groups right, we need to properly aggregate those infection fatality ratios.
+
+The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonly assumed that these are close enough. Further complication: different populations also have different age pyramids. Let's compare a few versions of getting this value "right":
+
+ - using the average age in the formula
+ - using the formula average, without accounting for actual age-distribution
+ - using the age-weighted formula average
+
+We'll assume an ODE model that has 5-year age bands and then an "85+" group, and for two characteristic population distribution: the UK, with a relatively flat age pyramid typifying high-income settings, and XYZ, with a generally much younger population typifying low-income settings.
+
+```{r}
+# TODO get some high res age data? wpp is all in 5 year bands already
+# apply methods to get different values for different bands
+```
+
+Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
+
+```{r}
+pars <- YLLr::aggregate_param(
+  ifr_levin, ...
+)
+```
+
+Once a model is run with the proper age-weighted parameters, you might need to disaggregate an outcome for the purposes of a follow-on analysis, such as for example converting deaths into years-life-lost. Again, let's compare a few approaches to doing such an analysis:
+
+ - all of the deaths occur at the middle age in the group
+ - the deaths are uniformly distributed within the age category
+ - the deaths are proportionally distributed based on high-resolution age within the age groups
+ - the deaths are proportionally distributed based both on high-resolution age *and* relative death rates
+
+For demonstration purposes, let's assume infections that fall uniformly across the population^[More typically, the distribution of infections would reflect, for example, differing contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.]. Then for these approaches, we get the following distribution of deaths by age:
+
+```{r}
+```
+
+If we then combine these different deaths-by-age with life-expectancy-by-age estimates, we see these differences in estimated years-life-lost.
+
+```{r}
+```
+
+With the `YLLr` package, we can express the higher resolution version of this calculation as:
+
+```{r}
+vals <- YLLr::disaggregate_values(...)
+# combine with YLL data => result
+```
+
+In summary, properly accounting for age-specific effects requires careful bookkeeping and can result in substantively different answers. Using `YLLr` automates the bookkeeping step, so that your analyses can more easily account for potentially important differences.
