@@ -50,7 +50,6 @@ The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonl
 We'll assume an ODE model that has 5-year age bands and then an "85+" group, and for two characteristic population distribution: the UK, with a relatively flat age pyramid typifying high-income settings, and XYZ, with a generally much younger population typifying low-income settings.
 
 ```{r}
-# population distributions
 data('popF'); data('popM')
 pop_data <- rbind(cbind(popF[grepl('United Kingdom',popF$name) | grepl('Afghanistan',popF$name), c('name','age',2020)],source='Females'),
                   cbind(popM[grepl('United Kingdom',popM$name) | grepl('Afghanistan',popM$name), c('name','age',2020)],source='Males'))
