@@ -62,6 +62,46 @@ ggplot(pop_data,
   facet_wrap(.~name,nrow=2,scales='fixed') + ylab('Population (millions)') + theme_bw() +
   scale_y_continuous(labels=function(x) abs(x)) + 
   theme(text=element_text(size=14))
+
+model_agegrps <- c(5,20,65)
+ex_data <- data.table(age=0:100)
+ex_data[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
+mid_ages <- ex_data[, .(mid_age = mean(age)), by='age_group']
+ex_data <- ex_data[mid_ages, on='age_group']
+ex_data[, mort_of_mean:=ifr_levin(mid_age)]
+ex_data[, mort_rate:=ifr_levin(age)]
+means <- ex_data[, .(mean_of_mort = mean(mort_rate)), by=c('age_group')]
+ex_data <- ex_data[means, on='age_group']
+ggplot(ex_data) + 
+  geom_line(aes(age,mort_rate)) + 
+  geom_line(aes(age,mort_of_mean),col=2,lty=2) + 
+  geom_line(aes(age,mean_of_mort),col=3,lty=2) + 
+  ylab('Infection fatality ratio') + xlab('Age') + 
+  scale_x_continuous(breaks=10*(0:10)) +
+  theme_bw() + scale_y_log10() +
+  theme(text=element_text(size=14))
+uk <- aggregate_param(ifr_levin,
+                      model_agegrps,
+                      data.table(lower=c(5*0:20),
+                                 upper=c(5*1:20-1, 120),
+                                 pop=epi_data[grepl('Uni',name)]$value))
+afg <- aggregate_param(ifr_levin,
+                      model_agegrps,
+                      data.table(lower=c(5*0:20),
+                                 upper=c(5*1:20-1, 120),
+                                 pop=epi_data[grepl('Afg',name)]$value))
+ex_data <- ex_data[uk, on='age_group', uk_mort := agg_value]
+ex_data <- ex_data[afg, on='age_group', afg_mort := agg_value]
+ggplot(ex_data) + 
+  geom_line(aes(age,mort_rate)) + 
+  geom_line(aes(age,mort_of_mean),col=2,lty=2) + 
+  geom_line(aes(age,mean_of_mort),col=3,lty=2) + 
+  geom_line(aes(age,uk_mort),col=4,lty=3) + 
+  geom_line(aes(age,afg_mort),col=5,lty=3) + 
+  ylab('Infection fatality ratio') + xlab('Age') + 
+  scale_x_continuous(breaks=10*(0:10)) +
+  theme_bw() + scale_y_log10() +
+  theme(text=element_text(size=14))
 ```
 
 Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
