@@ -50,8 +50,18 @@ The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonl
 We'll assume an ODE model that has 5-year age bands and then an "85+" group, and for two characteristic population distribution: the UK, with a relatively flat age pyramid typifying high-income settings, and XYZ, with a generally much younger population typifying low-income settings.
 
 ```{r}
-# TODO get some high res age data? wpp is all in 5 year bands already
-# apply methods to get different values for different bands
+# population distributions
+data('popF'); data('popM')
+pop_data <- rbind(cbind(popF[grepl('United Kingdom',popF$name) | grepl('Afghanistan',popF$name), c('name','age',2020)],source='Females'),
+                  cbind(popM[grepl('United Kingdom',popM$name) | grepl('Afghanistan',popM$name), c('name','age',2020)],source='Males'))
+pop_data[pop_data$source=='Males',]$`2020` <- -pop_data[pop_data$source=='Males',]$`2020`
+pop_data$age <- factor(pop_data$age, levels=unique(pop_data$age))
+ggplot(pop_data,
+       aes(x = age, y = `2020`/1000, fill = source)) +
+  geom_bar(position='stack',stat='identity') + labs(fill='') +
+  xlab('Age group') + coord_flip() + scale_fill_brewer(palette='Set1') +
+  facet_wrap(.~name,nrow=2,scales='fixed') + ylab('Population (millions)') + theme_bw() +
+  scale_y_continuous(labels=function(x) abs(x))
 ```
 
 Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
