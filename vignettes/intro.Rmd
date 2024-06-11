@@ -80,16 +80,21 @@ ggplot(ex_data) +
   scale_x_continuous(breaks=10*(0:10)) +
   theme_bw() + scale_y_log10() +
   theme(text=element_text(size=14))
-uk <- aggregate_param(ifr_levin,
+```
+
+Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
+
+```{r}
+uk <- YLLr::aggregate_param(ifr_levin,
                       model_agegrps,
                       data.table(lower=c(5*0:20),
                                  upper=c(5*1:20-1, 120),
-                                 pop=epi_data[grepl('Uni',name)]$value))
-afg <- aggregate_param(ifr_levin,
+                                 pop=epi_data[grepl('United Kingdom',name)]$value))
+afg <- YLLr::aggregate_param(ifr_levin,
                       model_agegrps,
                       data.table(lower=c(5*0:20),
                                  upper=c(5*1:20-1, 120),
-                                 pop=epi_data[grepl('Afg',name)]$value))
+                                 pop=epi_data[grepl('Afghanistan',name)]$value))
 ex_data <- ex_data[uk, on='age_group', uk_mort := agg_value]
 ex_data <- ex_data[afg, on='age_group', afg_mort := agg_value]
 ggplot(ex_data) + 
@@ -102,14 +107,6 @@ ggplot(ex_data) +
   scale_x_continuous(breaks=10*(0:10)) +
   theme_bw() + scale_y_log10() +
   theme(text=element_text(size=14))
-```
-
-Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
-
-```{r}
-pars <- YLLr::aggregate_param(
-  ifr_levin, ...
-)
 ```
 
 Once a model is run with the proper age-weighted parameters, you might need to disaggregate an outcome for the purposes of a follow-on analysis, such as for example converting deaths into years-life-lost. Again, let's compare a few approaches to doing such an analysis:
