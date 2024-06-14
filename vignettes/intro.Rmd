@@ -12,44 +12,68 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+options(scipen=100000)
 ```
 
 ```{r setup}
-library(YLLr)
-library(ggplot2)
+source("~/Desktop/research asst/Global Code/YLLr/aggregate.R") # library(YLLr)
 library(data.table)
-library(wpp2019)
+library(ggplot2)
+library(wpp2022)
 ```
 
-The `YLLr` package provides convenient methods to both (1) properly aggregate age-dependent empirical relationships for use in compartmental ODE models with age groups and (2) properly disaggregate outcomes for those groups back to higher resolution by-age values.
+The `YLLr` package provides convenient methods to (1) aggregate age-dependent parameters for use in compartmental ODE models with different age groups and (2) disaggregate outcomes from model age groups back to higher resolution age-specific values.
 
-The quintessential example is a years-life-lost analysis for a disease that has a highly age-specific mortality rate, such as COVID-19.
+A key example is a years of life lost analysis for a disease that has a highly age-specific mortality rate, such as COVID-19.
 
-Considering the infection-fatality ratio for COVID-19 as found by Levin et al (TODO citation):
+Consider the age-specific infection fatality ratio (IFR) for COVID-19 as found by Levin et al (TODO citation):
 
 ```{r}
 ifr_levin <- \(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
   100 * scaled / (100 + scaled) / 100
 }
-dt <- data.table(age = 0:100)
-dt[, ifr := ifr_levin(age)]
+dt <- data.table(age = 0:100, ifr = ifr_levin(0:100))
 ggplot(dt) + aes(age, ifr) +
-  geom_line() + scale_x_continuous("Age") + scale_y_continuous("Infection Fatality Ratio", trans = "log10") +
+  geom_line(lwd=0.8) + scale_x_continuous("Age") + scale_y_log10() +
+  ylab("Infection fatality ratio") +
   theme_minimal()
 ```
 
-Typically in ODE compartmental models, age groups will be represented at a lower resolution consistent with available data on, for example, contact patterns. For this example, if we want to get the relative mortality of these groups right, we need to properly aggregate those infection fatality ratios.
+Typically in ODE compartmental models, wide, low-resolution age groups are used, to be consistent with available data on factors such as contact patterns. We therefore need properly aggregated versions of values such as IFRs to apply to our wide age group outcomes.
 
-The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonly assumed that these are close enough. Further complication: different populations also have different age pyramids. Let's compare a few versions of getting this value "right":
+The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonly assumed that these are close enough. Age structure also varies between populations, further complicating these aggregations. So using the mean value of the IFR won't give equal values to using the IFR of the mean age, and neither of these values will be equal to the actual IFR across a wide age group when accounting for age structure. 
 
- - using the average age in the formula
- - using the formula average, without accounting for actual age-distribution
- - using the age-weighted formula average
+Let's compare a few methods of estimating a value across a wide age group:
 
-We'll assume an ODE model that has 5-year age bands and then an "85+" group, and for two characteristic population distribution: the UK, with a relatively flat age pyramid typifying high-income settings, and XYZ, with a generally much younger population typifying low-income settings.
+-   using the average age in the formula
+-   using the formula average, without accounting for actual age distribution
+-   using the age-weighted formula average
 
-```{r}
+We'll assume that we are using an ODE model with age groups [0,5), [5,20), [20,65), and [65,+). The first two methods for calculating the model age groups' IFRs look like:
+
+```{r, cache=T,fig.width=5,fig.height=3}
+model_agegrps <- c(5,20,65) # wide model age groups
+ex_data <- data.table(age=0:100)
+ex_data[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
+mid_ages <- ex_data[, .(mid_age = 0.5+mean(age)), by='age_group']
+ex_data <- ex_data[mid_ages, on='age_group']
+ex_data[, ifr:=ifr_levin(age)][, ifr_of_mean:=ifr_levin(mid_age)]
+means <- ex_data[, .(mean_of_ifr = mean(ifr)), by=c('age_group')]
+ex_data <- ex_data[means, on='age_group']
+ex_data_l <- melt(ex_data, id.vars = c('age','age_group','mid_age'))
+ggplot(ex_data_l) + 
+  geom_line(aes(age,value,group=variable,col=variable,lty=(variable=='ifr')),lwd=0.8) + 
+  scale_color_manual(values=c(1,'#E00000','#FFC300')) +
+  ylab('Infection fatality ratio') + xlab('Age') + 
+  scale_x_continuous(breaks=10*(0:10)) + guides(lty = FALSE) +
+  theme_bw() + scale_y_log10() + labs(col='Method') +
+  theme(text=element_text(size=14))
+```
+
+We will consider two characteristic age distributions: the UK, with a relatively flat age pyramid typifying high-income settings, and Afghanistan, which has a generally much younger population typifying low-income settings. Data on age structure is also often at a lower resolution than we would like; here, we have 5-year age bands.  
+
+```{r, cache=T,fig.width=6,fig.height=4}
 data('popF'); data('popM')
 pop_data <- data.table(rbind(cbind(popF[grepl('United Kingdom',popF$name) | grepl('Afghanistan',popF$name), c('name','age',2020)],source='Females'),
                   cbind(popM[grepl('United Kingdom',popM$name) | grepl('Afghanistan',popM$name), c('name','age',2020)],source='Males')))
@@ -59,78 +83,143 @@ ggplot(pop_data,
        aes(x = age, y = `2020`/1000, fill = source)) +
   geom_bar(position='stack',stat='identity') + labs(fill='') +
   xlab('Age group') + coord_flip() + scale_fill_brewer(palette='Set1') +
-  facet_wrap(.~name,nrow=2,scales='fixed') + ylab('Population (millions)') + theme_bw() +
+  facet_wrap(name~.,nrow=1,scales='fixed') + ylab('Population (millions)') + theme_bw() +
   scale_y_continuous(labels=function(x) abs(x)) + 
   theme(text=element_text(size=14))
+```
 
-model_agegrps <- c(5,20,65)
-ex_data <- data.table(age=0:100)
-ex_data[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
-mid_ages <- ex_data[, .(mid_age = mean(age)), by='age_group']
-ex_data <- ex_data[mid_ages, on='age_group']
-ex_data[, mort_of_mean:=ifr_levin(mid_age)]
-ex_data[, mort_rate:=ifr_levin(age)]
-means <- ex_data[, .(mean_of_mort = mean(mort_rate)), by=c('age_group')]
-ex_data <- ex_data[means, on='age_group']
-ggplot(ex_data) + 
-  geom_line(aes(age,mort_rate)) + 
-  geom_line(aes(age,mort_of_mean),col=2,lty=2) + 
-  geom_line(aes(age,mean_of_mort),col=3,lty=2) + 
+Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Using `YLLr`, the properly age-weighted IFRs look like:
+
+```{r, cache=T,fig.width=5,fig.height=3}
+epi_data <- pop_data[, .(value = 1000*sum(abs(`2020`))), by=c('name','age')]
+for(c in unique(epi_data$name)){
+  epi_data[age=='95-99' & name==c, value := sum(epi_data[age%in%c('95-99','100+') & name==c,value])]
+}
+epi_data <- epi_data[!age=='100+']
+uk_pop_dt <- data.table(lower=c(5*0:19), upper=c(5*1:20-1), pop=epi_data[grepl('United Kingdom',name)]$value)
+afg_pop_dt <- data.table(lower=c(5*0:19), upper=c(5*1:20-1), pop=epi_data[grepl('Afghanistan',name)]$value)
+uk_vals <- aggregate_param(ifr_levin,
+                            model_agegrps,
+                            uk_pop_dt)
+afg_vals <- aggregate_param(ifr_levin,
+                             model_agegrps,
+                             afg_pop_dt)
+ex_data <- ex_data[uk_vals, on='age_group', uk_ifr := agg_value]
+ex_data <- ex_data[afg_vals, on='age_group', afg_ifr := agg_value]
+ex_data_l <- melt(ex_data, id.vars = c('age','age_group','mid_age'))
+ggplot(ex_data_l) + 
+  geom_line(aes(age,value,group=variable,col=variable, lty=(variable=='ifr')),lwd=0.8) + 
+  scale_color_manual(values=c(1,'#E00000','#FFC300','#8c9ce6','#0f2587')) +
   ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) +
-  theme_bw() + scale_y_log10() +
+  scale_x_continuous(breaks=10*(0:10)) + guides(lty = F, alpha=F) +
+  theme_bw() + scale_y_log10() + labs(col='Method') +
   theme(text=element_text(size=14))
 ```
 
-Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Here's how you can use `YLLr` to get properly age-weighted aggregate parameters:
+Once a model is run with the proper age-weighted parameters, you might need to disaggregate an outcome for the purposes of a follow-on analysis, such as for example converting deaths into years of life lost. In this example, since the IFR increases with age, deaths occurring in a wide age group are more likely to have occurred at the older end of the age group. Let's compare a few approaches for disaggregating these values:
 
-```{r}
-uk <- YLLr::aggregate_param(ifr_levin,
-                      model_agegrps,
-                      data.table(lower=c(5*0:20),
-                                 upper=c(5*1:20-1, 120),
-                                 pop=epi_data[grepl('United Kingdom',name)]$value))
-afg <- YLLr::aggregate_param(ifr_levin,
-                      model_agegrps,
-                      data.table(lower=c(5*0:20),
-                                 upper=c(5*1:20-1, 120),
-                                 pop=epi_data[grepl('Afghanistan',name)]$value))
-ex_data <- ex_data[uk, on='age_group', uk_mort := agg_value]
-ex_data <- ex_data[afg, on='age_group', afg_mort := agg_value]
-ggplot(ex_data) + 
-  geom_line(aes(age,mort_rate)) + 
-  geom_line(aes(age,mort_of_mean),col=2,lty=2) + 
-  geom_line(aes(age,mean_of_mort),col=3,lty=2) + 
-  geom_line(aes(age,uk_mort),col=4,lty=3) + 
-  geom_line(aes(age,afg_mort),col=5,lty=3) + 
-  ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) +
-  theme_bw() + scale_y_log10() +
-  theme(text=element_text(size=14))
+1. all of the deaths occur at the middle age in the group,
+2. the deaths are uniformly distributed within the age category,
+3. the deaths are proportionally distributed based on high-resolution age within the age groups,
+4. the deaths are proportionally distributed based both on high-resolution age *and* relative mortality rates.
+
+For demonstration purposes, let's assume infections that fall roughly uniformly across the population[^1]. Then for these approaches, we get the following distribution of deaths by age:
+
+[^1]: More typically, the distribution of infections would reflect other factors such as varying contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.
+
+```{r, cache=T,fig.width=5,fig.height=4}
+vals <- c(100, 1000, 100000, 1000000) # number of deaths in each model age group
+vals_dt <- data.table(age_group = 1:4, deaths=vals, 
+                      age_group_length=c(model_agegrps,100)-(c(0,model_agegrps)))
+vals_dt[, method2:=vals/age_group_length]
+death_distr <- data.table(age=0:99)
+death_distr[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
+death_distr[, method1:=0]
+death_distr[age==2, method1:=vals[1]][age==12, method1:=vals[2]]
+death_distr[age==42, method1:=vals[3]][age==82, method1:=vals[4]]
+death_distr <- death_distr[vals_dt, on='age_group']
+death_distr[,uk_pop := rep(uk_pop_dt$pop/5,each=5)]
+death_distr[,afg_pop := rep(afg_pop_dt$pop/5,each=5)]
+tot_pop <- death_distr[, .(uk_tot_pop=sum(uk_pop),
+                           afg_tot_pop=sum(afg_pop)), by=age_group]
+death_distr <- death_distr[tot_pop, on='age_group']
+death_distr[, method3uk := deaths*uk_pop/uk_tot_pop]
+death_distr[, method3afg := deaths*afg_pop/afg_tot_pop]
+death_distr[, mort := ifr_levin(age)]
+death_distr[, mort_x_pop_uk := mort*uk_pop][, mort_x_pop_afg := mort*afg_pop]
+tot_pop <- death_distr[, .(uk_tot_mort=sum(mort*uk_pop),
+                           afg_tot_mort=sum(mort*afg_pop)), by=age_group]
+death_distr <- death_distr[tot_pop, on='age_group']
+death_distr[, method4uk := deaths*mort_x_pop_uk/uk_tot_mort]
+death_distr[, method4afg := deaths*mort_x_pop_afg/afg_tot_mort]
+death_distr_w <- melt(death_distr[, c('age','age_group','method1','method2',
+                                      'method3uk','method3afg','method4uk','method4afg')], id.vars=c('age','age_group'))
+ggplot(death_distr_w) + 
+  geom_bar(aes(x=age,y=value/1000,fill=variable),
+               lwd=0.8, position='dodge',stat='identity') + 
+  facet_wrap(variable~., scales='free', nrow=3) +
+  xlab('Age') + ylab('Deaths (thousands)') +
+  theme_minimal() + scale_fill_brewer(palette='Set2') +
+  theme(legend.position = 'none')
 ```
 
-Once a model is run with the proper age-weighted parameters, you might need to disaggregate an outcome for the purposes of a follow-on analysis, such as for example converting deaths into years-life-lost. Again, let's compare a few approaches to doing such an analysis:
+The distribution of deaths produced by method 4 reflects that within any 5-year age band, deaths are more likely to occur at older ages, and that the overall distribution of deaths reflects both age distribution (which varies between the UK and Afghanistan) and the shape of the relative mortality rates (which is consistent across both populations).
 
- - all of the deaths occur at the middle age in the group
- - the deaths are uniformly distributed within the age category
- - the deaths are proportionally distributed based on high-resolution age within the age groups
- - the deaths are proportionally distributed based both on high-resolution age *and* relative death rates
+When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years-life-lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
 
-For demonstration purposes, let's assume infections that fall uniformly across the population^[More typically, the distribution of infections would reflect, for example, differing contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.]. Then for these approaches, we get the following distribution of deaths by age:
-
-```{r}
+```{r, cache=T,fig.width=5,fig.height=3}
+data("mxB1")
+mxB1 <- data.table(mxB1)
+## calculating life expectancy at all ages from mx ##
+for(country in c('United Kingdom','Afghanistan')){
+  lt <- mxB1[name == country,][, c('name','age','2020')]
+  setnames(lt,'2020','mx')
+  lt[, ax := 0.5][age==0, ax := 0.2][, qx := (mx)/(1 + mx*(1-ax))]
+  lt[age==max(lt$age), qx := 1][age==0, lx:=1000]
+  for(i in 2:nrow(lt)){
+    lt[i, lx := (1-lt[i-1,qx])*lt[i-1,lx]]
+  }
+  for(i in 1:(nrow(lt)-1)){
+    lt[i, Lx := lt[i+1,lx] + lt[i,ax]*(lt[i,lx]-lt[i+1,lx])]
+  }
+  lt[age==max(lt$age), Lx := lx]
+  lt <- lt[order(-age),]
+  lt[, ex := cumsum(Lx)/1000]
+  lt <- lt[order(age)]
+  death_distr <- death_distr[lt, on='age', ex := ex]
+  setnames(death_distr,'ex',country)
+}
+## ylls = sum(deaths at age x * life expectancy from age x) ##
+ylls <- death_distr[, c('age','method1','method2','method3uk','method3afg','method4uk','method4afg','United Kingdom','Afghanistan')]
+ylls[, uk_yll_1:=method1*`United Kingdom`][, uk_yll_2:=method2*`United Kingdom`][, uk_yll_3:=method3uk*`United Kingdom`][, uk_yll_4:=method4uk*`United Kingdom`]
+ylls[, afg_yll_1:=method1*`Afghanistan`][, afg_yll_2:=method2*`Afghanistan`][, afg_yll_3:=method3afg*`Afghanistan`][, afg_yll_4:=method4afg*`Afghanistan`]
+yll_cols <- which(grepl('yll',colnames(ylls)))
+ylls_sum <- data.table(country = rep(c('United Kingdom','Afghanistan'),each=4),
+                       method = rep(1:4,2),
+                       ylls = colSums(ylls[, ..yll_cols]))
+ggplot(ylls_sum) + 
+  geom_bar(aes(x=country, y=ylls/1000000, fill=as.factor(method)),
+           position='dodge',stat='identity') + 
+  theme_bw() + labs(fill='Method') + scale_fill_brewer(palette='Set1') + 
+  ylab('YLLs (millions)') + xlab('Country')
 ```
 
-If we then combine these different deaths-by-age with life-expectancy-by-age estimates, we see these differences in estimated years-life-lost.
+With the `YLLr` package, we can efficiently account for age structure and mortality shape:
 
-```{r}
+```{r, cache=T,fig.width=5,fig.height=3}
+vals <- c(100, 1000, 100000, 1000000) # number of deaths in each model age group
+disagg_values <- rbind(
+  cbind(disaggregate_value(vals,ifr_levin,model_agegrps, uk_pop_dt), 
+        country='United Kingdom'),
+  cbind(disaggregate_value(vals,ifr_levin,model_agegrps,afg_pop_dt),
+        country='Afghanistan'))
+ggplot(disagg_values) + 
+  geom_bar(aes(x=age,y=disagg_value/1000,fill=country),
+               lwd=0.8, position='dodge',stat='identity') + 
+  facet_wrap(country~., scales='free', nrow=3) +
+  xlab('Age') + ylab('Deaths (thousands)') + 
+  theme_minimal() + scale_fill_brewer(palette='Set2') +
+  theme(legend.position='none')
 ```
 
-With the `YLLr` package, we can express the higher resolution version of this calculation as:
-
-```{r}
-vals <- YLLr::disaggregate_values(...)
-# combine with YLL data => result
-```
-
-In summary, properly accounting for age-specific effects requires careful bookkeeping and can result in substantively different answers. Using `YLLr` automates the bookkeeping step, so that your analyses can more easily account for potentially important differences.
+In summary, properly accounting for age-specific effects across multiple different age bands requires careful bookkeeping and can result in substantively different answers. Using `YLLr` automates the bookkeeping step, so that your analyses can more easily account for potentially important differences.
