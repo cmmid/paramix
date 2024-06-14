@@ -16,7 +16,7 @@ options(scipen=100000)
 ```
 
 ```{r setup}
-source("~/Desktop/research asst/Global Code/YLLr/aggregate.R") # library(YLLr)
+source("~/YLLr/aggregate.R") # library(YLLr)
 library(data.table)
 library(ggplot2)
 library(wpp2022)
