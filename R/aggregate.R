@@ -60,22 +60,26 @@ aggregate_param <- function(
 disaggregate_value <- function(
   value, f_age, target_bins, population, ...
 ) {
-
+  
   if(!0 %in% target_bins){target_bins <- c(0, target_bins)}
-  population[, mid := (lower+upper+1)/2]
-  population[, f_age_val := f_age(mid)]
+  population[, interval := 1 + upper - lower]
+  population <- population[,lapply(.SD, rep, times=interval)]
+  population[, pop:=pop/interval]
+  population[, interval:=NULL]
+  population[, age:=(min(population$lower)):(max(population$upper))]
+  population[, f_age_val := f_age(age)]
   population[, f_tot := f_age_val*pop]
   population[, age_group := 0]
   for(i in 1:length(target_bins)){
     population[, age_group := age_group + (upper>target_bins[i])]
   }
   value_dt <- data.table(age_group = sort(unique(population$age_group)),
-                      vals = value)
+                         vals = value)
   population <- population[value_dt, on='age_group']
   pop_sum <- population[, .(age_grp_f = sum(f_tot)), by=age_group]
   population <- population[pop_sum, on='age_group']
   population[, disagg_value := vals*f_tot/age_grp_f]
   
-  return(population[, c('lower','upper','disagg_value')])
+  return(population[, c('age','disagg_value')])
 
 }
