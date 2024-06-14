@@ -16,7 +16,7 @@ options(scipen=100000)
 ```
 
 ```{r setup}
-source("~/YLLr/aggregate.R") # library(YLLr)
+source("~/Desktop/research asst/Global Code/YLLr/aggregate.R") # library(YLLr)
 library(data.table)
 library(ggplot2)
 library(wpp2022)
@@ -66,7 +66,7 @@ ggplot(ex_data_l) +
   geom_line(aes(age,value,group=variable,col=variable,lty=(variable=='ifr')),lwd=0.8) + 
   scale_color_manual(values=c(1,'#E00000','#FFC300')) +
   ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) + guides(lty = FALSE) +
+  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
   theme_bw() + scale_y_log10() + labs(col='Method') +
   theme(text=element_text(size=14))
 ```
@@ -111,7 +111,7 @@ ggplot(ex_data_l) +
   geom_line(aes(age,value,group=variable,col=variable, lty=(variable=='ifr')),lwd=0.8) + 
   scale_color_manual(values=c(1,'#E00000','#FFC300','#8c9ce6','#0f2587')) +
   ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) + guides(lty = F, alpha=F) +
+  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
   theme_bw() + scale_y_log10() + labs(col='Method') +
   theme(text=element_text(size=14))
 ```
@@ -170,7 +170,7 @@ When we combine these different deaths-by-age with life expectancy estimates, we
 ```{r, cache=T,fig.width=5,fig.height=3}
 data("mxB1")
 mxB1 <- data.table(mxB1)
-## calculating life expectancy at all ages from mx ##
+## calculating life expectancy at all ages from mx 
 for(country in c('United Kingdom','Afghanistan')){
   lt <- mxB1[name == country,][, c('name','age','2020')]
   setnames(lt,'2020','mx')
@@ -189,7 +189,7 @@ for(country in c('United Kingdom','Afghanistan')){
   death_distr <- death_distr[lt, on='age', ex := ex]
   setnames(death_distr,'ex',country)
 }
-## ylls = sum(deaths at age x * life expectancy from age x) ##
+## ylls = sum(deaths at age x * life expectancy from age x) 
 ylls <- death_distr[, c('age','method1','method2','method3uk','method3afg','method4uk','method4afg','United Kingdom','Afghanistan')]
 ylls[, uk_yll_1:=method1*`United Kingdom`][, uk_yll_2:=method2*`United Kingdom`][, uk_yll_3:=method3uk*`United Kingdom`][, uk_yll_4:=method4uk*`United Kingdom`]
 ylls[, afg_yll_1:=method1*`Afghanistan`][, afg_yll_2:=method2*`Afghanistan`][, afg_yll_3:=method3afg*`Afghanistan`][, afg_yll_4:=method4afg*`Afghanistan`]
