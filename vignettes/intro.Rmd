@@ -16,33 +16,42 @@ options(scipen=100000)
 ```
 
 ```{r setup}
-source("~/Desktop/research asst/Global Code/YLLr/aggregate.R") # library(YLLr)
+library(YLLr)
 library(data.table)
 library(ggplot2)
-library(wpp2022)
+library(wpp2019)
 ```
 
-The `YLLr` package provides convenient methods to (1) aggregate age-dependent parameters for use in compartmental ODE models with different age groups and (2) disaggregate outcomes from model age groups back to higher resolution age-specific values.
+# Overview
 
-A key example is a years of life lost analysis for a disease that has a highly age-specific mortality rate, such as COVID-19.
+The `YLLr` package provides convenient methods to (1) aggregate parameters from high-resolution curves depending on some feature for use in compartmental ODE models with lower-resolution in that feature and (2) disaggregate outcomes from model groups back to higher resolution breakdowns. Throughout the package, we use `blend` as the verb for aggregation and `distill` as the verb for disaggregation. We use age-dependent parameters as our primary example, but the package is generalizable to other features.
 
-Consider the age-specific infection fatality ratio (IFR) for COVID-19 as found by Levin et al (TODO citation):
+# Motivating Example
+
+The SARS-COV-2 pathogen causes COVID-19, which has a notable age-specific mortality rate. In a meta-analysis, Levin et al (TODO citation) estimates the age-specific infection fatality ratio (IFR) for COVID-19 as:
 
 ```{r}
 ifr_levin <- \(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
-  100 * scaled / (100 + scaled) / 100
+  scaled / (100 + scaled)
 }
+```
+
+Or plotted:
+
+```{r}
 dt <- data.table(age = 0:100, ifr = ifr_levin(0:100))
 ggplot(dt) + aes(age, ifr) +
-  geom_line(lwd=0.8) + scale_x_continuous("Age") + scale_y_log10() +
+  geom_line(lwd = 0.8) + scale_x_continuous("Age") + scale_y_log10() +
   ylab("Infection fatality ratio") +
   theme_minimal()
 ```
 
-Typically in ODE compartmental models, wide, low-resolution age groups are used, to be consistent with available data on factors such as contact patterns. We therefore need properly aggregated versions of values such as IFRs to apply to our wide age group outcomes.
+Typically in ODE compartmental models have low-resolution stratification combining several ages, for both computational reasons and because of low-resolution date on other interactions like contact patterns.
 
-The challenge here is that generally $E[f(x)] \ne f(E[x])$, though it is commonly assumed that these are close enough. Age structure also varies between populations, further complicating these aggregations. So using the mean value of the IFR won't give equal values to using the IFR of the mean age, and neither of these values will be equal to the actual IFR across a wide age group when accounting for age structure. 
+Since we are mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? The challenge here is that generally $E[f(x)] \ne f(E[x])$, so we cannot for example simply take the IFR at the mean age for the compartment. As a practical matter, the relative distribution of age varies between populations, so even the proper average of IFR needs to be weighted by that distribution.
+
+Fortunately, the correct values are not *difficult* to calculate, but they are *tedious* to calculate. The `YLLr` package automates this process, so that you can focus on the analysis rather than the bookkeeping.
 
 Let's compare a few methods of estimating a value across a wide age group:
 
