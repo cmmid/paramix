@@ -12,14 +12,11 @@ make_density <- function(densities, interpolater = approxfun, ...) {
   if (is.function(densities)) {
     return(densities)
   } else {
-    return(approxfun(
-      c(densities$from, partitions[length(partitions)]),
-      c(densities$weight, 0), ...
-    ))
+    return(interpolater(densities$from, densities$weight, ...))
   }
 }
 
-make_weight <- function(f_params, f_density) {
+make_weight <- function(f_param, f_density) {
   return(function(x, ...) f_param(x, ...) * f_density(x))
 }
 
@@ -84,14 +81,13 @@ make_weight <- function(f_params, f_density) {
 #' )
 #' @export
 blend <- function(
-  f_param,
+  f_param, densities,
   model_partition,
-  densities,
   ...,
   open_partition = c(lower = FALSE, upper = FALSE)
 ) {
 
-  partitions <- make_partition(model_partition, open_partition)
+  partitions <- make_partition(model_partition, open_partition = open_partition)
 
   # TODO argument checking
 

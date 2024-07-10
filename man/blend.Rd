@@ -6,8 +6,8 @@
 \usage{
 blend(
   f_param,
-  model_partition,
   densities,
+  model_partition,
   ...,
   open_partition = c(lower = FALSE, upper = FALSE)
 )
@@ -17,11 +17,11 @@ blend(
 (e.g. age), and optionally additional arguments, and yields the parameter
 value.}
 
-\item{model_partition}{a numeric vector of cut points, which define the partition}
-
 \item{densities}{a \code{data.frame} with numeric columns \code{from} and \code{weight}. The
 \code{weight} column must be positive, but need not be normalized. Alternatively:
 a density function}
+
+\item{model_partition}{a numeric vector of cut points, which define the partition}
 
 \item{...}{optional arguments to \code{f_param}}
 

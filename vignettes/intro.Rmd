@@ -37,21 +37,15 @@ ifr_levin <- \(age_in_years) {
 }
 ```
 
-Or plotted:
+We will use this IFR function as a motivating example throughout this vignette.
 
-```{r}
-dt <- data.table(age = 0:100, ifr = ifr_levin(0:100))
-ggplot(dt) + aes(age, ifr) +
-  geom_line(lwd = 0.8) + scale_x_continuous("Age") + scale_y_log10() +
-  ylab("Infection fatality ratio") +
-  theme_minimal()
-```
+# Usage
 
 Typically in ODE compartmental models have low-resolution stratification combining several ages, for both computational reasons and because of low-resolution date on other interactions like contact patterns.
 
 Since we are mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? The challenge here is that generally $E[f(x)] \ne f(E[x])$, so we cannot for example simply take the IFR at the mean age for the compartment. As a practical matter, the relative distribution of age varies between populations, so even the proper average of IFR needs to be weighted by that distribution.
 
-Fortunately, the correct values are not *difficult* to calculate, but they are *tedious* to calculate. The `YLLr` package automates this process, so that you can focus on the analysis rather than the bookkeeping.
+Computing those values requires careful bookkeeping, but is not computationally expensive. This package consolidates that bookkeeping into simpler steps, so that you can focus on the bigger picture analyses.
 
 Let's compare a few methods of estimating a value across a wide age group:
 
@@ -62,7 +56,37 @@ Let's compare a few methods of estimating a value across a wide age group:
 We'll assume that we are using an ODE model with age groups [0,5), [5,20), [20,65), and [65,+). The first two methods for calculating the model age groups' IFRs look like:
 
 ```{r, cache=T,fig.width=5,fig.height=3}
-model_agegrps <- c(5,20,65) # wide model age groups
+# suppose some wide model age groups
+model_agelimits <- c(0, 5, 20, 65, 101)
+# get some real world data from wpp data sets
+data('popF'); data('popM')
+setDT(popF); setDT(popM)
+
+pop_dt <- rbind(
+  popF[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`, source = "Females")],
+  popM[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`, source = "Males")]
+)
+
+density_dt <- pop_dt[, .(
+  weight = sum(`2020`)
+), by = .(name, from = as.integer(gsub("^(\\d+).*","\\1", age)))]
+
+plot_dt <- parameter_summary(
+  f_param = ifr_levin, densities = density_dt[name == "United Kingdom"],
+  model_agelimits
+)
+
+ggplot(plot_dt) + aes(x = x, color = variable, y = value) + 
+  geom_line(data = \(dt) dt[variable == "f_val"], lwd = 0.8, lty = "dotted") +
+  geom_step(data = \(dt) dt[variable != "f_val", .SD[1], by=.(model_category, variable)])
+
++ 
+  scale_color_manual(values=c(1,'#E00000','#FFC300')) +
+  ylab('Infection fatality ratio') + xlab('Age') + 
+  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
+  theme_bw() + scale_y_log10() + labs(col='Method') +
+  theme(text=element_text(size=14))
+
 ex_data <- data.table(age=0:100)
 ex_data[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
 mid_ages <- ex_data[, .(mid_age = 0.5+mean(age)), by='age_group']
@@ -83,11 +107,7 @@ ggplot(ex_data_l) +
 We will consider two characteristic age distributions: the UK, with a relatively flat age pyramid typifying high-income settings, and Afghanistan, which has a generally much younger population typifying low-income settings. Data on age structure is also often at a lower resolution than we would like; here, we have 5-year age bands.  
 
 ```{r, cache=T,fig.width=6,fig.height=4}
-data('popF'); data('popM')
-pop_data <- data.table(rbind(cbind(popF[grepl('United Kingdom',popF$name) | grepl('Afghanistan',popF$name), c('name','age',2020)],source='Females'),
-                  cbind(popM[grepl('United Kingdom',popM$name) | grepl('Afghanistan',popM$name), c('name','age',2020)],source='Males')))
-pop_data[source=='Males', `2020` := -pop_data[source=='Males']$`2020`]
-pop_data$age <- factor(pop_data$age, levels=unique(pop_data$age))
+
 ggplot(pop_data,
        aes(x = age, y = `2020`/1000, fill = source)) +
   geom_bar(position='stack',stat='identity') + labs(fill='') +

@@ -3,6 +3,7 @@
 export(alembic)
 export(blend)
 export(distill)
+export(parameter_summary)
 importFrom(data.table,":=")
 importFrom(data.table,.BY)
 importFrom(data.table,.EACHI)
