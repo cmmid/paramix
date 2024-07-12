@@ -108,9 +108,9 @@ blend <- function(
   f <- make_weight(f_param, f_density)
 
   out <- as.numeric(mapply(
-    integrate, lower = lowers, upper = uppers, MoreArgs = c(list(f=f), list(...))
+    integrate, lower = lowers, upper = uppers, MoreArgs = c(list(f = f), list(..., subdivisions = 1000L))
   )["value",]) / as.numeric(mapply(
-    integrate, lower = lowers, upper = uppers, MoreArgs = list(f=f_density)
+    integrate, lower = lowers, upper = uppers, MoreArgs = list(f = f_density, subdivisions = 1000L)
   )["value",])
 
   return(out)

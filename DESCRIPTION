@@ -1,4 +1,4 @@
-Package: YLLr
+Package: paramix
 Title: Age-Based Aggregation and Disaggregation for Analysis of Compartmental Models
 Version: 0.0.0.9000
 Authors@R: 
@@ -8,7 +8,7 @@ Authors@R:
            comment = c(ORCID = "0000-0002-0380-1503")),
       person("Lucy", "Goodfellow", , "first.last@example.com", role = c("aut"),
            comment = c(ORCID = "0009-0004-0434-5863")))
-Description: The `YLLr` package provides a convenient framework for aggregating
+Description: The `paramix` package provides a convenient framework for aggregating
     and disaggregating age-dependent effects, for example case fatality ratio,
     for proper parametrization of of lower-resolution compartmental models - that
     is, with relatively broad age bins - and subsequent upscaling of model outputs
