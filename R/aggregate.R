@@ -1,10 +1,43 @@
 
+#' @title Create a Least-Common-Interval Partition
+#'
+#' @description
+#' Internal utility method for creating partitions, possibly from multiple
+#' distinct partitions. Validates inputs and potential creates open ends.
+#'
+#' @param ... any number of numeric vectors
+#'
+#' @param open_partition a value coerceable to logical vector; length 1 or 2
+#'
+#' @return a sorted numeric vector with unique values
+#'
+#' @examples
+#' paramix:::make_partition(1:5, open_partition = FALSE)
+#' paramix:::make_partition(5:1, 4, 6, open_partition = c(TRUE, FALSE))
+#'
 make_partition <- function(
   ..., open_partition
 ) {
-  partition <- c(...)
+  partition <- suppressWarnings(as.numeric(c(...)))
+
+  stopifnot(
+    "Must provide some partition points." = length(partition) != 0,
+    "May not provide any `NA` values for partition." = !any(is.na(partition)),
+    "Must indicate if partition is open." = !missing(open_partition)
+  )
+
+  open_partition <- as.logical(open_partition)
+
+  stopifnot(
+    "Open indicator must be length 1 or 2." = length(open_partition) %in% c(1, 2),
+    "Must provide values interpretable as logical." = !any(is.na(open_partition))
+  )
+
+  if (length(open_partition) == 1) open_partition[2] <- open_partition[1]
+
   if (open_partition[1]) partition <- c(-Inf, partition)
   if (open_partition[2]) partition <- c(partition, Inf)
+
   return(unique(sort(partition)))
 }
 

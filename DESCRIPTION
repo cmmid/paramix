@@ -23,7 +23,9 @@ Suggests:
     rmarkdown,
     ggplot2,
     roxygen2,
-    wpp2022
+    wpp2022,
+    testthat (>= 3.0.0)
 VignetteBuilder: knitr
 Imports: 
     data.table
+Config/testthat/edition: 3
