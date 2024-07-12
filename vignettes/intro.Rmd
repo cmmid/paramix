@@ -15,11 +15,14 @@ knitr::opts_chunk$set(
 options(scipen=100000)
 ```
 
-```{r setup}
-library(YLLr)
-library(data.table)
-library(ggplot2)
-library(wpp2019)
+```{r setup, echo = FALSE}
+suppressPackageStartupMessages({
+  library(YLLr)
+  library(data.table)
+  library(ggplot2)
+  library(patchwork)
+  library(wpp2022)
+})
 ```
 
 # Overview
@@ -28,7 +31,7 @@ The `YLLr` package provides convenient methods to (1) aggregate parameters from 
 
 # Motivating Example
 
-The SARS-COV-2 pathogen causes COVID-19, which has a notable age-specific mortality rate. In a meta-analysis, Levin et al (TODO citation) estimates the age-specific infection fatality ratio (IFR) for COVID-19 as:
+The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mortality rate. In a meta-analysis, Levin et al (TODO citation) estimates the age-specific infection fatality ratio (IFR) for COVID-19 as:
 
 ```{r}
 ifr_levin <- \(age_in_years) {
@@ -39,157 +42,190 @@ ifr_levin <- \(age_in_years) {
 
 We will use this IFR function as a motivating example throughout this vignette.
 
-# Usage
+# Example Comparison
 
-Typically in ODE compartmental models have low-resolution stratification combining several ages, for both computational reasons and because of low-resolution date on other interactions like contact patterns.
+Typically in ODE compartmental models have low-resolution stratification combining several ages, for computational reasons, because of low-resolution date on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
 
-Since we are mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? The challenge here is that generally $E[f(x)] \ne f(E[x])$, so we cannot for example simply take the IFR at the mean age for the compartment. As a practical matter, the relative distribution of age varies between populations, so even the proper average of IFR needs to be weighted by that distribution.
+When mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? Generally, $E[f(x)] \ne f(E[x])$, so simply using the IFR at the mean age for the compartment is not guaranteed correct. The average IFR over the age range is more correct, but that assumes uniform distribution of ages, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
 
-Computing those values requires careful bookkeeping, but is not computationally expensive. This package consolidates that bookkeeping into simpler steps, so that you can focus on the bigger picture analyses.
+$$
+\textrm{IFR}\Big\rvert_a^b = \frac{\int_a^b \textrm{IFR}(\textrm{age})\rho(\textrm{age})d\textrm{age}}{\int_a^b \rho(\textrm{age})d\textrm{age}}
+$$
 
-Let's compare a few methods of estimating a value across a wide age group:
+Let's compare the various calculations of IFR for two different population age distributions: the United Kingdom and Afghanistan. Recall, we have considered using:
 
--   using the average age in the formula
--   using the formula average, without accounting for actual age distribution
--   using the age-weighted formula average
+ - the average age in the function, i.e. $\textrm{IFR}\Big\rvert_a^b = \textrm{IFR}(\frac{a+b}{2})$
+ - the function average, assuming uniform age distribution, i.e. $\textrm{IFR}\Big\rvert_a^b = \int_a^b \textrm{IFR}(\textrm{age})d\textrm{age}$
+ - the weighted function average (as above)
 
-We'll assume that we are using an ODE model with age groups [0,5), [5,20), [20,65), and [65,+). The first two methods for calculating the model age groups' IFRs look like:
+Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and [65,101), corresponding roughly to pre-school age children, school age individuals, prime working age adults, and post-working age adults. First, we need to get the relevant values:
 
-```{r, cache=T,fig.width=5,fig.height=3}
-# suppose some wide model age groups
+```{r,create_pops}
+# our model age groups
 model_agelimits <- c(0, 5, 20, 65, 101)
-# get some real world data from wpp data sets
+# get select data from World Population Prospects estimates
 data('popF'); data('popM')
 setDT(popF); setDT(popM)
-
-pop_dt <- rbind(
-  popF[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`, source = "Females")],
-  popM[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`, source = "Males")]
-)
-
-density_dt <- pop_dt[, .(
+density_dt <- rbind(
+  popF[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`)],
+  popM[name %like% "United Kingdom|Afghanistan", .(name, age, `2020`)]
+)[, .(
   weight = sum(`2020`)
 ), by = .(name, from = as.integer(gsub("^(\\d+).*","\\1", age)))]
-
-plot_dt <- parameter_summary(
-  f_param = ifr_levin, densities = density_dt[name == "United Kingdom"],
-  model_agelimits
-)
-
-ggplot(plot_dt) + aes(x = x, color = variable, y = value) + 
-  geom_line(data = \(dt) dt[variable == "f_val"], lwd = 0.8, lty = "dotted") +
-  geom_step(data = \(dt) dt[variable != "f_val", .SD[1], by=.(model_category, variable)])
-
-+ 
-  scale_color_manual(values=c(1,'#E00000','#FFC300')) +
-  ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
-  theme_bw() + scale_y_log10() + labs(col='Method') +
-  theme(text=element_text(size=14))
-
-ex_data <- data.table(age=0:100)
-ex_data[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
-mid_ages <- ex_data[, .(mid_age = 0.5+mean(age)), by='age_group']
-ex_data <- ex_data[mid_ages, on='age_group']
-ex_data[, ifr:=ifr_levin(age)][, ifr_of_mean:=ifr_levin(mid_age)]
-means <- ex_data[, .(mean_of_ifr = mean(ifr)), by=c('age_group')]
-ex_data <- ex_data[means, on='age_group']
-ex_data_l <- melt(ex_data, id.vars = c('age','age_group','mid_age'))
-ggplot(ex_data_l) + 
-  geom_line(aes(age,value,group=variable,col=variable,lty=(variable=='ifr')),lwd=0.8) + 
-  scale_color_manual(values=c(1,'#E00000','#FFC300')) +
-  ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
-  theme_bw() + scale_y_log10() + labs(col='Method') +
-  theme(text=element_text(size=14))
 ```
 
-We will consider two characteristic age distributions: the UK, with a relatively flat age pyramid typifying high-income settings, and Afghanistan, which has a generally much younger population typifying low-income settings. Data on age structure is also often at a lower resolution than we would like; here, we have 5-year age bands.  
-
-```{r, cache=T,fig.width=6,fig.height=4}
-
-ggplot(pop_data,
-       aes(x = age, y = `2020`/1000, fill = source)) +
-  geom_bar(position='stack',stat='identity') + labs(fill='') +
-  xlab('Age group') + coord_flip() + scale_fill_brewer(palette='Set1') +
-  facet_wrap(name~.,nrow=1,scales='fixed') + ylab('Population (millions)') + theme_bw() +
-  scale_y_continuous(labels=function(x) abs(x)) + 
-  theme(text=element_text(size=14))
-```
-
-Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. Using `YLLr`, the properly age-weighted IFRs look like:
+Now let's make a plot of the IFR values for the different age groups, under different approaches to computing them. We'll use the package function `parameter_summary`, which provides a convenient breakdown of the parameter values:
 
 ```{r, cache=T,fig.width=5,fig.height=3}
-epi_data <- pop_data[, .(value = 1000*sum(abs(`2020`))), by=c('name','age')]
-for(c in unique(epi_data$name)){
-  epi_data[age=='95-99' & name==c, value := sum(epi_data[age%in%c('95-99','100+') & name==c,value])]
-}
-epi_data <- epi_data[!age=='100+']
-uk_pop_dt <- data.table(lower=c(5*0:19), upper=c(5*1:20-1), pop=epi_data[grepl('United Kingdom',name)]$value)
-afg_pop_dt <- data.table(lower=c(5*0:19), upper=c(5*1:20-1), pop=epi_data[grepl('Afghanistan',name)]$value)
-uk_vals <- aggregate_param(ifr_levin,
-                            model_agegrps,
-                            uk_pop_dt)
-afg_vals <- aggregate_param(ifr_levin,
-                             model_agegrps,
-                             afg_pop_dt)
-ex_data <- ex_data[uk_vals, on='age_group', uk_ifr := agg_value]
-ex_data <- ex_data[afg_vals, on='age_group', afg_ifr := agg_value]
-ex_data_l <- melt(ex_data, id.vars = c('age','age_group','mid_age'))
-ggplot(ex_data_l) + 
-  geom_line(aes(age,value,group=variable,col=variable, lty=(variable=='ifr')),lwd=0.8) + 
-  scale_color_manual(values=c(1,'#E00000','#FFC300','#8c9ce6','#0f2587')) +
-  ylab('Infection fatality ratio') + xlab('Age') + 
-  scale_x_continuous(breaks=10*(0:10)) + guides(lty = 'none') +
-  theme_bw() + scale_y_log10() + labs(col='Method') +
-  theme(text=element_text(size=14))
+plot_dt <- rbind(
+  parameter_summary(
+    f_param = ifr_levin, densities = density_dt[name == "United Kingdom"],
+    model_agelimits
+  )[, variable := fifelse(variable != "wm_f", variable, "uk_wm_f")],
+  parameter_summary(
+    f_param = ifr_levin, densities = density_dt[name == "Afghanistan"],
+    model_agelimits
+  )[variable == "wm_f", variable := "af_wm_f"]
+)
+
+pop_p <- ggplot(density_dt) + aes(from, weight) + geom_bar(stat = "identity") +
+  facet_grid(cols = vars(name)) +
+  scale_x_continuous("Age", expand = expansion()) +
+  scale_y_continuous("Population [1K]")
+  theme_minimal()
+  
+ifr_p <- ggplot(plot_dt) + aes(x = x, color = variable, y = value) + 
+  geom_line(data = \(dt) dt[variable == "f_val"], lwd = 0.8, lty = "dotted") +
+  geom_step(data = \(dt) dt[variable != "f_val"]) +
+  scale_color_discrete(
+    "Method",
+    breaks = plot_dt[, value[.N], by = variable][order(-V1), variable],
+    labels = c("f(age)", "E[f(age)]", "f(E[age])", "UK-weighted E[f(age)]", "AF-weighted E[f(age)]")
+  ) +
+  scale_y_continuous("Infection Fatality Ratio\n(IFR)", expand = expansion()) +
+  scale_x_continuous("Age [years]", breaks = 10 * (0:10), expand = expansion()) +
+  theme_minimal() +
+  theme(
+    legend.position = "inside", legend.position.inside = c(0.1, 0.9),
+    legend.justification.inside = c(0, 1)
+  )
+
+pop_p / ifr_p
 ```
 
-Once a model is run with the proper age-weighted parameters, you might need to disaggregate an outcome for the purposes of a follow-on analysis, such as for example converting deaths into years of life lost. In this example, since the IFR increases with age, deaths occurring in a wide age group are more likely to have occurred at the older end of the age group. Let's compare a few approaches for disaggregating these values:
+Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. 
 
-1. all of the deaths occur at the middle age in the group,
-2. the deaths are uniformly distributed within the age category,
-3. the deaths are proportionally distributed based on high-resolution age within the age groups,
-4. the deaths are proportionally distributed based both on high-resolution age *and* relative mortality rates.
+# Typical Application
 
-For demonstration purposes, let's assume infections that fall roughly uniformly across the population[^1]. Then for these approaches, we get the following distribution of deaths by age:
+In the previous section, we used a convenience method the package provides for plotting. More typically, you will want to use the three main functions in the package:
+
+ - `blend` to create the correctly weighted mixture parameters
+ - `alembic` to create a properly weighted mapping from one resolution to another
+ - `distill` to apply an `alembic` mapping to model outputs
+
+Revisiting our previous example, the properly age-weighted IFRs look like:
+
+```{r params}
+params <- rbind(
+  uk = blend(ifr_levin, densities = density_dt[name == "United Kingdom"], model_partition = model_agelimits),
+  af = blend(ifr_levin, densities = density_dt[name == "Afghanistan"], model_partition = model_agelimits)
+)
+signif(params, digits = 2)
+```
+
+These parameters are now weighted for use in a model assuming those age categories and populations. Great! However: once you run that model, you might want to disaggregate an outcome, such as for example converting deaths into years of life lost.
+
+In this example, since the IFR increases with age, deaths occurring in a wide age group are more likely to have occurred at the older end of the age group. Let's compare a few approaches for imputing the distribution of deaths; we could assume the deaths occur ...
+
+ - all at the middle age in the group
+ - uniformly within group,
+ - proportionally to age distribution within the group,
+ - proportionally to age *and* relative mortality rates.
+
+For the last option, we can use Bayes rule to think about the correct proportionality:
+
+$$
+\textrm{P}\left(\textrm{Age} \vert \textrm{Death}\right) = \frac{\textrm{P}\left(\textrm{Death} \vert \textrm{Age}\right)\textrm{P}\left(\textrm{Age}\right)}{\textrm{P}\left(\textrm{Death}\right)}
+$$
+
+We know that $\textrm{P}\left(\textrm{Age}\right)$ is the relative fraction of an age within any group, and $\frac{\textrm{P}\left(\textrm{Death} \vert \textrm{Age}\right)}{\textrm{P}\left(\textrm{Death}\right)}$ is the relative rate of that outcome for that age within that same group. We can thus use those terms to calculate $\textrm{P}\left(\textrm{Age} \vert \textrm{Death}\right)$ on a per-group basis, and allocate the death outcomes accordingly.
+
+For demonstration purposes, let's assume 1M *infections* that happen proportionally across the model population groups[^1]. How would these translate into deaths in finer age groups, based on these different imputation assumptions? Our differently parametrised models would have converted these infections to deaths as follows:
 
 [^1]: More typically, the distribution of infections would reflect other factors such as varying contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.
 
-```{r, cache=T,fig.width=5,fig.height=4}
-vals <- c(100, 1000, 100000, 1000000) # number of deaths in each model age group
-vals_dt <- data.table(age_group = 1:4, deaths=vals, 
-                      age_group_length=c(model_agegrps,100)-(c(0,model_agegrps)))
-vals_dt[, method2:=vals/age_group_length]
-death_distr <- data.table(age=0:99)
-death_distr[,age_group := 1+(age>=model_agegrps[1])+(age>=model_agegrps[2])+(age>=model_agegrps[3])]
-death_distr[, method1:=0]
-death_distr[age==2, method1:=vals[1]][age==12, method1:=vals[2]]
-death_distr[age==42, method1:=vals[3]][age==82, method1:=vals[4]]
-death_distr <- death_distr[vals_dt, on='age_group']
-death_distr[,uk_pop := rep(uk_pop_dt$pop/5,each=5)]
-death_distr[,afg_pop := rep(afg_pop_dt$pop/5,each=5)]
-tot_pop <- death_distr[, .(uk_tot_pop=sum(uk_pop),
-                           afg_tot_pop=sum(afg_pop)), by=age_group]
-death_distr <- death_distr[tot_pop, on='age_group']
-death_distr[, method3uk := deaths*uk_pop/uk_tot_pop]
-death_distr[, method3afg := deaths*afg_pop/afg_tot_pop]
-death_distr[, mort := ifr_levin(age)]
-death_distr[, mort_x_pop_uk := mort*uk_pop][, mort_x_pop_afg := mort*afg_pop]
-tot_pop <- death_distr[, .(uk_tot_mort=sum(mort*uk_pop),
-                           afg_tot_mort=sum(mort*afg_pop)), by=age_group]
-death_distr <- death_distr[tot_pop, on='age_group']
-death_distr[, method4uk := deaths*mort_x_pop_uk/uk_tot_mort]
-death_distr[, method4afg := deaths*mort_x_pop_afg/afg_tot_mort]
-death_distr_w <- melt(death_distr[, c('age','age_group','method1','method2',
-                                      'method3uk','method3afg','method4uk','method4afg')], id.vars=c('age','age_group'))
-ggplot(death_distr_w) + 
-  geom_bar(aes(x=age,y=value/1000,fill=variable),
-               lwd=0.8, position='dodge',stat='identity') + 
-  facet_wrap(variable~., scales='free', nrow=3) +
-  xlab('Age') + ylab('Deaths (thousands)') +
-  theme_minimal() + scale_fill_brewer(palette='Set2') +
-  theme(legend.position = 'none')
+```{r}
+model_density_dt <- density_dt[,.(
+  model_from = model_agelimits[findInterval(from, model_agelimits)],
+  weight
+), by = name][, .(weight = sum(weight)), by = .(name, model_from)][,
+  weight := weight/sum(weight), by = name
+]
+model_deaths_dt <- model_density_dt[,
+  .(model_from, deaths = weight*1e6*params[ifelse(.BY == "United Kingdom", "uk", "af"),]),
+  by = name
+]
+model_deaths_dt
+```
+
+For these approaches, we get the following distribution of deaths by age category:
+
+```{r alembicsetup}
+# setup the model to outcome mapping using `alembic`s
+mapping_dt <- c("United Kingdom", "Afghanistan") |>
+  lapply(\(nm) alembic(
+    ifr_levin, densities = density_dt[name == nm],
+    model_partition = model_agelimits,
+    new_partition = density_dt[, seq_len(max(from) + 2L) - 1L]
+  )[, name := nm]
+) |> rbindlist()
+# for reference, get a uniform density of the reference density
+uniform_density_dt <- density_dt[, {
+  mapply(seq, from = from, to = c(from[-1], tail(model_agelimits, 1)), MoreArgs = list(by = 1)) |>
+  mapply(\(ages, total) data.table(age = ages, weight = total / length(ages)),
+    ages = _, total = weight,
+    SIMPLIFY = FALSE
+  ) |> rbindlist()
+}, by = name]
+
+methods_dt <- rbind(
+# approach 1: all deaths at mean age
+model_deaths_dt[, .(
+  name,
+  age = head(model_agelimits, -1) + diff(model_agelimits)/2,
+  deaths,
+  method = "mean_age"
+)],
+
+# approach 2: deaths spread uniformly within group
+model_deaths_dt[, {
+  all_ages <- mapply(seq, from = model_from, to = model_agelimits[-1] - 1L, MoreArgs = list(by = 1))
+  mapply(
+    \(ages, total) data.table(age = ages, deaths = total / length(ages)),
+    ages = all_ages, total = deaths,
+    SIMPLIFY = FALSE
+  ) |> rbindlist()
+}, by = name][, method := "uniform_model"],
+
+# approach 3: proportionally to age distribution within the group
+uniform_density_dt[
+  mapping_dt, on = .(name, age = new_from)
+][model_deaths_dt, on = .(name, model_from)][, .(
+  age, deaths = weight/sum(weight)
+), by=.(name, model_from)][, .(name, age, deaths, method = "uniform_age")],
+
+# approach 4: proportionally to age *and* relative mortality rates
+model_deaths_dt[
+  mapping_dt, on = .(name, model_from), .(
+  name, age = new_from, deaths = deaths * model_fraction
+)][, method := "alembic_weighted"]
+)
+
+ggplot(methods_dt) + aes(x = age, y = deaths, color = method) +
+  facet_grid(. ~ name) +
+  geom_point() +
+  theme_minimal() +
+  scale_y_log10()
 ```
 
 The distribution of deaths produced by method 4 reflects that within any 5-year age band, deaths are more likely to occur at older ages, and that the overall distribution of deaths reflects both age distribution (which varies between the UK and Afghanistan) and the shape of the relative mortality rates (which is consistent across both populations).
