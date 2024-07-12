@@ -17,11 +17,13 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
+Remotes: PPgp/wpp2022
 Suggests: 
     knitr,
     rmarkdown,
     ggplot2,
-    roxygen2
+    roxygen2,
+    wpp2022
 VignetteBuilder: knitr
 Imports: 
     data.table

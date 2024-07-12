@@ -94,19 +94,24 @@ blend <- function(
   lowers <- head(partitions, -1)
   uppers <- tail(partitions, -1)
 
-  f_density <- make_density(densities, method = "constant")
+  approxrule <- c(1, 1)
+  if (!open_partition[1] & partitions[1] < densities[, min(from)]) {
+    approxrule[1] <- 2
+  }
+
+  if (!open_partition[2] & tail(partitions, 1) > densities[, max(from)]) {
+    approxrule[2] <- 2
+  }
+
+  f_density <- make_density(densities, method = "constant", rule = approxrule)
 
   f <- make_weight(f_param, f_density)
 
-  out <- numeric(length(lowers))
-
-  for (i in seq_along(lowers)) {
-    out[i] <- integrate(
-      f, lower = lowers[i], upper = uppers[i], ...
-    )$value / integrate(
-      f_density, lower = lowers[i], upper = uppers[i], ...
-    )$value
-  }
+  out <- as.numeric(mapply(
+    integrate, lower = lowers, upper = uppers, MoreArgs = c(list(f=f), list(...))
+  )["value",]) / as.numeric(mapply(
+    integrate, lower = lowers, upper = uppers, MoreArgs = list(f=f_density)
+  )["value",])
 
   return(out)
 
@@ -150,7 +155,18 @@ alembic <- function(
   lowers <- head(overall_partition, -1)
   uppers <- tail(overall_partition, -1)
 
-  f <- make_weight(f_param, make_density(densities, method = "constant"))
+  approxrule <- c(1, 1)
+  if (!open_partition[1] & overall_partition[1] < densities[, min(from)]) {
+    approxrule[1] <- 2
+  }
+
+  if (!open_partition[2] & tail(overall_partition, 1) > densities[, max(from)]) {
+    approxrule[2] <- 2
+  }
+
+  f_density <- make_density(densities, method = "constant", rule = approxrule)
+
+  f <- make_weight(f_param, f_density)
 
   return(data.table::data.table(from = lowers)[, {
     model_part <- findInterval(from, model_partition)
@@ -160,7 +176,8 @@ alembic <- function(
       weight[i] <- integrate(f, lowers[i], uppers[i])$value
     }
     weight <- weight / aggregate(weight, by = list(model_part), FUN = sum)[model_part,]$x
-    .(model_partition = model_part, new_partition = new_part, model_fraction = weight)
+    .(model_from = model_partition[model_part],
+      new_from = new_partition[new_part], model_fraction = weight)
   }])
 
 }

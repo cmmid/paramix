@@ -8,7 +8,8 @@
 #'
 #' @export
 parameter_summary <- function(
-  f_param, densities, model_partition, ..., resolution = diff(range(model_partition)) + 1L
+  f_param, densities, model_partition, ...,
+  resolution = diff(range(model_partition)) + 1L
 ) {
   partition <- make_partition(model_partition, open_partition = c(FALSE, FALSE))
 
@@ -16,13 +17,14 @@ parameter_summary <- function(
     x = seq(partition[1], tail(partition, 1), length.out = resolution)
   )[, f_val := f_param(x) ]
 
-  plot_dt[, model_category := findInterval(x, model_partition)]
-  plot_dt[, f_mean := f_param(mean(x)), by = model_category]
-  plot_dt[, mean_f := mean(f_param(x)), by = model_category]
+  plot_dt[, model_category := findInterval(x, model_partition, all.inside = TRUE)]
 
-  blended <- blend(f_param, densities, model_partition, ...)
-  plot_dt[, blend_f := blended[.GRP], by = model_category]
+  blended <- blend(f_param, densities, partition, ...)
 
-  data.table::melt.data.table(plot_dt, id.vars = c("model_category", "x"))
+  plot_dt[, c("f_mean", "mean_f", "wm_f") := .(
+    f_param(mean(x)), mean(f_param(x)), blended[.GRP]
+  ), by = model_category]
+
+  data.table::melt.data.table(plot_dt, id.vars = c("model_category", "x"), variable.factor = FALSE)
 
 }
