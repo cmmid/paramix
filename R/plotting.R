@@ -25,6 +25,9 @@ parameter_summary <- function(
     f_param(mean(x)), mean(f_param(x)), blended[.GRP]
   ), by = model_category]
 
-  data.table::melt.data.table(plot_dt, id.vars = c("model_category", "x"), variable.factor = FALSE)
+  data.table::melt.data.table(
+    plot_dt, id.vars = c("model_category", "x"),
+    variable.factor = FALSE, variable.name = "method"
+  )
 
 }
