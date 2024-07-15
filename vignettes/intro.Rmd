@@ -95,7 +95,7 @@ plot_dt <- density_dt[, {
 
 And plotting these different blends:
 
-```{r, ifrfig, echo = FALSE, cache = TRUE, out.width = "100%"}
+```{r, ifrfig, echo = FALSE, cache = TRUE, out.width = "100%", dpi = 600, fig.width = 8, fig.height = 5}
 pop_p <- ggplot(density_dt) + aes(from, weight) + geom_bar(stat = "identity") +
   facet_grid(cols = vars(name)) +
   scale_x_continuous("Age", expand = expansion()) +
@@ -142,7 +142,11 @@ params <- sapply(
     ifr_levin, densities = density_dt[name == nm], model_partition = model_agelimits
   )
 )
-signif(params, digits = 2)
+tbl <- signif(params, digits = 2)
+row.names(tbl) <- paste(
+  head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
+)
+knitr::kable(tbl, align = c("c", "c"), )
 ```
 
 These parameters are now weighted for use in a model assuming those age categories and populations. Great! However: once you run that model, you might want to disaggregate an outcome, such as for example converting deaths into years of life lost.
@@ -177,12 +181,15 @@ model_deaths_dt <- model_density_dt[,
   .(model_from, deaths = weight*1e6*params[, name]),
   by = name
 ]
-model_deaths_dt |> dcast.data.table(model_from ~ name, value.var = "deaths")
+tbl2 <- model_deaths_dt |> dcast.data.table(model_from ~ name, value.var = "deaths") |> as.data.frame()
+tbl2$model_from <- NULL
+row.names(tbl2) <- paste(head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - ")
+knitr::kable(tbl2)
 ```
 
 For these approaches, we get the following distribution of deaths by age category:
 
-```{r alembicsetup, echo = FALSE, cache = TRUE, out.width = "100%", fig.height = 5}
+```{r alembicsetup, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
 # setup the model to outcome mapping using `alembic`s
 mapping_dt <- density_dt[, alembic(
   ifr_levin, densities = .SD,
@@ -228,7 +235,7 @@ ggplot(distill_methods_dt) + aes(x = age, y = deaths, color = method) +
   geom_point() +
   theme_minimal() + theme(
     legend.position = "inside", legend.position.inside = c(1, 0),
-    legend.justification.inside = c(1, 0) 
+    legend.justification.inside = c(1, 0), text = element_text(size = 10)
   ) +
   scale_y_log10("Deaths\n(log 10 scale)") +
   scale_x_continuous("Age") +
@@ -245,7 +252,7 @@ ggplot(distill_methods_dt) + aes(x = age, y = deaths, color = method) +
 ```
 When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years-life-lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
 
-```{r, figlex, cache=T, out.width="100%", fig.height=3}
+```{r, figlex, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 3, dpi = 600}
 data("mxB1")
 life_expectancy_dt <- setDT(mxB1)[
   name %in% c('United Kingdom','Afghanistan'),
@@ -280,7 +287,7 @@ ggplot(yll_dt) + aes(x = name, y = YLL/1e4, fill = method) +
   theme_minimal() + 
   theme(
     legend.position = "inside", legend.position.inside = c(0.1, 0.9),
-    legend.justification.inside = c(0, 1) 
+    legend.justification.inside = c(0, 1), text = element_text(size = 8)
   ) +
   scale_fill_brewer("Method", palette = 'Set1') + 
   ylab('YLLs per 1M Infections\n[10K person-years]') + xlab('Country')
