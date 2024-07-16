@@ -1,6 +1,9 @@
 
 default: hw
 
+# if you want to override directories e.g.
+-include local.makefile
+
 # convenience make definitions
 R = $(strip Rscript $^ $(1) $@)
 
@@ -8,6 +11,9 @@ R = $(strip Rscript $^ $(1) $@)
 DATDIR ?= input
 OUTDIR ?= results
 FIGDIR ?= figure
+
+${DATDIR} ${OUTDIR} ${FIGDIR}:
+	mkdir -p $@
 
 # scenarios
 POPSCN := GBR AFG
@@ -27,7 +33,7 @@ ${DATDIR}/population.rds: R/population.R | .install_packages ${DATDIR}
 
 # input life expectancy tables
 ${DATDIR}/lex.rds: R/lex.R
-	$(call R,${POPSCN})
+	$(call R)
 
 # input scenario data - use paramix::blend to create these
 ${DATDIR}/param_%.json: R/param.R ${DATDIR}/population.rds | ${DATDIR}
