@@ -1,10 +1,16 @@
 
+# TODO convert to pacman?
+
 if (!require(data.table)) {
 	install.packages("data.table")
 }
 
 if (!require(jsonlite)) {
-  install.packages("ggplot2")
+  install.packages("jsonlite")
+}
+
+if (!require(countrycode)) {
+  install.packages("countrycode")
 }
 
 if (!require(ggplot2)) {
