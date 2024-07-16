@@ -1,12 +1,11 @@
 
 require(data.table)
-require(jsonlite)
 require(paramix)
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
-  "GBR", "FLU",
-  file.path("input", "param_GBR_FLU.json")
+  "GBR", "SC2",
+  file.path("input", "param_GBR_FLU.rda")
 ) else commandArgs(trailingOnly = TRUE)
 
 iso <- match.arg(.args[2], c("AFR", "GBR"))
@@ -22,6 +21,21 @@ f_ifr <- switch (ifr,
   }
 )
 
-obj <- list()
+model_agelimits <- c(0, 5, 20, 65, 101)
 
-obj |> write_json(tail(.args, 1), pretty = TRUE)
+ifr_params <- blend(
+  f_param = f_ifr,
+  densities = pop_dt,
+  model_partition = model_agelimits
+)
+
+mapping_dt <- alembic(
+  f_param = f_ifr, densities = pop_dt,
+  model_partition = model_agelimits,
+  new_partition = pop_dt[, seq(min(from), max(from) + 1L)]
+)
+
+save(
+  model_agelimits, ifr_params, mapping_dt,
+  file = tail(.args, 1)
+)

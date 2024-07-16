@@ -142,6 +142,9 @@ params <- sapply(
     ifr_levin, densities = density_dt[name == nm], model_partition = model_agelimits
   )
 )
+```
+
+```{r paramstbl, echo = FALSE}
 tbl <- signif(params, digits = 2)
 row.names(tbl) <- paste(
   head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
@@ -181,6 +184,9 @@ model_deaths_dt <- model_density_dt[,
   .(model_from, deaths = weight*1e6*params[, name]),
   by = name
 ]
+```
+
+```{r deathtbl, echo = FALSE}
 tbl2 <- model_deaths_dt |> dcast.data.table(model_from ~ name, value.var = "deaths") |> as.data.frame()
 tbl2$model_from <- NULL
 row.names(tbl2) <- paste(head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - ")

@@ -36,7 +36,7 @@ ${DATDIR}/lex.rds: R/lex.R
 	$(call R)
 
 # input scenario data - use paramix::blend to create these
-${DATDIR}/param_%.json: R/param.R ${DATDIR}/population.rds | ${DATDIR}
+${DATDIR}/param_%.rda: R/param.R ${DATDIR}/population.rds | ${DATDIR}
 	$(call R,$(subst _, ,$*))
 
 allparam: $(patsubst %,${DATDIR}/param_%.json,${ALLSCN})

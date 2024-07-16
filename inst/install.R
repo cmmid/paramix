@@ -5,10 +5,6 @@ if (!require(data.table)) {
 	install.packages("data.table")
 }
 
-if (!require(jsonlite)) {
-  install.packages("jsonlite")
-}
-
 if (!require(countrycode)) {
   install.packages("countrycode")
 }
