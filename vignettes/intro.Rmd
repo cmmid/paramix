@@ -50,7 +50,7 @@ For this vignette, we will work from the continuous IFR relationship, to compart
 
 ## Parametrizing a Compartmental Model
 
-Typically in ODE compartmental models have low-resolution stratification combining several ages, for computational reasons, because of low-resolution date on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
+Typically in ODE compartmental models have low-resolution stratification combining several ages, for computational reasons, because of low-resolution data on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
 
 When mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? Generally, $E\left[f\left(x\right)\right] \ne f\left(E\left[x\right]\right)$, so simply using the IFR at the mean age for the compartment is not guaranteed correct. The average IFR over the age range is more correct, but that assumes uniform distribution of individuals by age, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
 
