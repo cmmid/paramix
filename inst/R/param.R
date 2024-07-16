@@ -15,8 +15,11 @@ ifr <- match.arg(.args[3], c("FLU", "SC2"))
 pop_dt <- readRDS(.args[1])[iso3 == iso]
 
 f_ifr <- switch (ifr,
-  FLU = \(age) {},
-  SC2 = \(age) {}
+  FLU = \(age_in_years) {},
+  SC2 = \(age_in_years) {
+    scaled <- exp(-7.56 + 0.121 * age_in_years)
+    scaled / (100 + scaled)
+  }
 )
 
 obj <- list()
