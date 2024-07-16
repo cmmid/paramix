@@ -17,29 +17,38 @@ IFRSCN := SC2 FLU
 $(foreach pop,${POPSCN},$(foreach ifr,${IFRSCN},$(call $(eval ALLSCN += ${pop}_${ifr}))))
 
 # do some setup for the packages needed for this analysis
-.install_packages: R/setup.R
+.install_packages: install.R
 	$(call R)
+	touch $@
 
 # input population data
-${DATDIR}/popdata.rds: R/population.R | .install_packages ${DATDIR}
+${DATDIR}/population.rds: R/population.R | .install_packages ${DATDIR}
 	$(call R)
 
+# input life expectancy tables
+${DATDIR}/lex.rds: R/lex.R
+	$(call R,${POPSCN})
+
 # input scenario data - use paramix::blend to create these
-${DATDIR}/param_%.json: R/param.R ${DATDIR}/popdata.rds | ${DATDIR}
-	$(call R)
+${DATDIR}/param_%.json: R/param.R ${DATDIR}/population.rds | ${DATDIR}
+	$(call R,$(subst _, ,$*))
 
 allparam: $(patsubst %,${DATDIR}/param_%.json,${ALLSCN})
 
 # output scenario results
-${OUTDIR}/sim_%.rds: R/simulate.R ${DATDIR}/param_%.json | ${OUTDIR}
-	$(call R)
+${OUTDIR}/sim_%.rds: R/simulate.R ${DATDIR}/population.rds ${DATDIR}/param_%.json | ${OUTDIR}
+	$(call R,$(firstword $(subst _, ,$*)))
 
-# output distilled results
-${OUTDIR}/distill_%.rds: R/distill.R ${DATDIR}/param_%.json ${OUTDIR}/sim_%.rds
-	$(call R)
+# output distilled results - use paramix::alembic/distill
+${OUTDIR}/distill_%.rds: R/distill.R ${DATDIR}/population.rds ${DATDIR}/param_%.json ${OUTDIR}/sim_%.rds
+	$(call R,$(firstword $(subst _, ,$*)))
 
 # output computed YLLs
-${OUTDIR}/yll_%.rds: R/yll.R ${OUTDIR}/distill_%.json
+${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.json
+	$(call R,$(firstword $(subst _, ,$*)))
+
+# TODO what figs?
+${FIGDIR}/fig1.png: R/fig1.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 	$(call R)
 
 hw:
