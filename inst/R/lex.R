@@ -3,12 +3,39 @@ require(data.table)
 require(wpp2022)
 
 .args <- if (interactive()) c(
-  "AFG", "GBR",
   file.path("input", "lex.rds")
 ) else commandArgs(trailingOnly = TRUE)
 
-isos <- head(.args, -1)
+data("mxB1")
+life_expectancy_dt <- setDT(mxB1)[, .(
+  iso3 = countrycode(country_code, "iso3n", "iso3c"),
+  age, mx = `2021`
+)][!is.na(iso3)][,
+  ax := fifelse(age == 0, 0.2, 0.5)
+][,
+  qx := fifelse(age == max(age), 1, mx / (1 + mx*(1-ax)))
+]
 
-dt <- data.table()
+life_expectancy_dt[age == 0, lx := 1000]
+life_expectancy_dt[, lx := {
+  tmp <- lx
+  for (i in 2:.N) {
+    tmp[i] <- (1-qx[i-1])*tmp[i-1]
+  }
+  tmp
+}, by = iso3]
 
-dt |> saveRDS(tail(.args, 1))
+life_expectancy_dt[,
+  Lx := c(
+    tail(lx, -1) + head(ax, -1)*(head(lx, -1) - tail(lx, -1)),
+    tail(lx, 1)
+  ),
+  by = iso3
+]
+
+life_expectancy_dt[,
+  ex := rev(cumsum(rev(Lx)/1000)),
+  by = iso3
+]
+
+life_expectancy_dt |> saveRDS(tail(.args, 1))
