@@ -29,7 +29,7 @@ The `paramix` package provides translation of parameters for use in compartmenta
 
 With `paramix`, the `blend()` function will translate from continuous parameter relationships to the correctly averaged values. In turn, the `distill()` function will impute how the gross group outcome should be distributed to finer resolution levels. These functions use mappings between low and high resolution that are created with the `alembic()` function.
 
-In this vignette, we demonstrate applying these functions from an initial functional relationship through a final analytic process.
+In this vignette, we demonstrate applying these functions from an initial functional relationship through a final analytic process. To highlight the use of the package, we prepend `paramix::` to the package functions.
 
 ## Motivating Example
 
@@ -38,7 +38,7 @@ The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mor
 [^1]: [Assessing the age specificity of infection fatality rates for COVID-19: systematic review, meta-analysis, and public policy implications](https://doi.org/10.1007/s10654-020-00698-1)
 
 ```{r ifrfdef}
-ifr_levin <- \(age_in_years) {
+ifr_levin <- function(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
   scaled / (100 + scaled)
 }
@@ -80,9 +80,11 @@ rm(popAge1dt)
 
 Now let's make a plot of the IFR values for the different age groups, under different approaches to computing them. We'll use the package function `parameter_summary()`, which provides a convenient comparison of the parameter values for these approaches to summarisation:
 
-```{r ifrplotsetup, cache=TRUE, echo=FALSE}
+```{r ifrplotsetup, cache=TRUE}
 plot_dt <- density_dt[, {
-  parameter_summary(f_param = ifr_levin, densities = .SD, model_agelimits)
+  paramix::parameter_summary(
+    f_param = ifr_levin, densities = .SD, model_agelimits
+  )
 }, by = name][
   name == "Afghanistan" | method == "wm_f"
 ][,
@@ -137,11 +139,12 @@ In the previous section, we used a convenience method the package provides for p
 Revisiting our previous example, the properly age-weighted IFRs look like:
 
 ```{r params}
-params <- sapply(
-  c("Afghanistan", "United Kingdom"), \(nm) blend(
-    ifr_levin, densities = density_dt[name == nm], model_partition = model_agelimits
+params <- sapply(c("Afghanistan", "United Kingdom"), function(nm) {
+  paramix::blend(
+    ifr_levin, densities = density_dt[name == nm],
+    model_partition = model_agelimits
   )
-)
+})
 ```
 
 ```{r paramstbl, echo = FALSE}
@@ -181,7 +184,7 @@ model_density_dt <- density_dt[,.(
   weight := weight/sum(weight), by = name
 ]
 model_deaths_dt <- model_density_dt[,
-  .(model_from, deaths = weight*1e6*params[, name]),
+  .(model_from, deaths = weight * 1e6 * params[, name]),
   by = name
 ]
 ```
@@ -195,13 +198,16 @@ knitr::kable(tbl2)
 
 For these approaches, we get the following distribution of deaths by age category:
 
-```{r alembicsetup, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
+```{r alembicsetup}
 # setup the model to outcome mapping using `alembic`s
-mapping_dt <- density_dt[, alembic(
-  ifr_levin, densities = .SD,
-  model_partition = model_agelimits,
-  new_partition = seq(min(from), max(from) + 1L)
-), by = name]
+mapping_dt <- density_dt[, 
+  paramix::alembic(
+    ifr_levin, densities = .SD,
+    model_partition = model_agelimits,
+    new_partition = seq(min(from), max(from) + 1L)
+  ),
+  by = name
+]
 
 distill_methods_dt <- rbind(
 # approach 1: all deaths at mean age
@@ -235,7 +241,9 @@ model_deaths_dt[
   name, age = new_from, deaths = deaths * model_fraction
 )][, method := "alembic_weighted"]
 )
+```
 
+```{r alembicplot, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
 ggplot(distill_methods_dt) + aes(x = age, y = deaths, color = method) +
   facet_grid(. ~ name) +
   geom_point() +
