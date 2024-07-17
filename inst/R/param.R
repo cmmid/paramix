@@ -8,18 +8,23 @@ require(paramix)
   file.path("input", "param_GBR_FLU.rda")
 ) else commandArgs(trailingOnly = TRUE)
 
-iso <- match.arg(.args[2], c("AFR", "GBR"))
-ifr <- match.arg(.args[3], c("FLU", "SC2"))
-
-pop_dt <- readRDS(.args[1])[iso3 == iso]
-
-f_ifr <- switch (ifr,
-  FLU = \(age_in_years) {},
+# TODO update FLU IFR calculation; using SC2 as placeholder
+ifr_opts <- list(
+  FLU = \(age_in_years) {
+    scaled <- exp(-7.56 + 0.121 * age_in_years)
+    scaled / (100 + scaled)
+  },
   SC2 = \(age_in_years) {
     scaled <- exp(-7.56 + 0.121 * age_in_years)
     scaled / (100 + scaled)
   }
 )
+
+pop_dt <- readRDS(.args[1])
+pop_dt <- pop_dt[
+  iso3 == pop_dt[, match.arg(.args[2], unique(iso3))]
+]
+f_ifr <- ifr_opts[[match.arg(.args[3], names(ifr_opts))]]
 
 model_agelimits <- c(0, 5, 20, 65, 101)
 

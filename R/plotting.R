@@ -31,3 +31,64 @@ parameter_summary <- function(
   )
 
 }
+
+#' @title Convenient Distillation Comparison Summary
+#'
+#' @description
+#' Calculates the outcomes for various distillation assumptions.
+#'
+#' @param model_outcomes_dt a data.table (or convertable to such) with columns
+#' `from` and `value`
+#'
+#' @param model_upper the upper limit of the last partition
+#'
+#'
+#' @export
+distill_summary <- function(
+  model_outcomes_dt,
+  density_dt,
+  mapping_dt
+) {
+  setDT(model_outcomes_dt)
+  model_partitions <- c(
+    model_outcomes_dt[, unique(from)],
+    mapping_dt[, max(new_from)]
+  )
+
+  density_dt <- density_dt[,{
+    new_from <- mapping_dt$new_from[findInterval(from, mapping_dt$new_from, all.inside = TRUE)]
+    .(new_from, weight)
+  }][, .(weight = sum(weight)), by = new_from]
+
+  return(rbind(
+    # approach 1: all outcomes at mean age
+    model_outcomes_dt[order(from), .(
+      partition = floor((head(model_partitions, -1) + tail(model_partitions, -1))/2),
+      value, method = "mean_age"
+    )],
+
+    # approach 2: outcomes spread uniformly within group
+    model_outcomes_dt[, {
+      parts <- mapping_dt[model_from == from, new_from]
+      .(partition = parts, value = value / length(parts))
+    }, by = from][, .(
+      partition, value, method = "uniform_model")
+    ],
+
+    # TODO need to aggregate density_dt to new_from
+
+    # approach 3: proportionally to age distribution within the group
+    density_dt[
+      mapping_dt, on = .(new_from)
+    ][model_outcomes_dt, on = .(model_from = from)][, .(
+      partition = new_from, value = value * weight / sum(weight)
+    ), by = .(model_from)][, .(partition, value, method = "uniform_age")],
+
+    # approach 4: proportionally to age *and* relative mortality rates
+    model_outcomes_dt[
+      mapping_dt, on = .(from = model_from), .(
+        partition = new_from, value = value * model_fraction
+      )][, method := "alembic_weighted"]
+  ))
+
+}

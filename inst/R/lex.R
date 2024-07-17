@@ -1,6 +1,7 @@
 
 require(data.table)
 require(wpp2022)
+require(countrycode)
 
 .args <- if (interactive()) c(
   file.path("input", "lex.rds")
