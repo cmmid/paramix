@@ -13,8 +13,8 @@ The `paramix` package provides a convenient framework for aggregating and disagg
 
 Authors:
 \itemize{
-  \item Simon Proctor \email{first.last@example.com} (\href{https://orcid.org/0000-0002-0380-1503}{ORCID})
-  \item Lucy Goodfellow \email{first.last@example.com} (\href{https://orcid.org/0009-0004-0434-5863}{ORCID})
+  \item Simon Proctor \email{simon.procter@lshtm.ac.uk} (\href{https://orcid.org/0000-0002-0380-1503}{ORCID})
+  \item Lucy Goodfellow \email{lucy.goodfellow@lshtm.ac.uk} (\href{https://orcid.org/0009-0004-0434-5863}{ORCID})
 }
 
 }
