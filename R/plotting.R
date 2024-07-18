@@ -56,7 +56,7 @@ distill_summary <- function(
   )
 
   density_dt <- density_dt[,{
-    new_from <- mapping_dt$new_from[findInterval(from, mapping_dt$new_from, all.inside = TRUE)]
+    new_from <- mapping_dt$new_from[findInterval(from, mapping_dt$new_from, rightmost.closed = FALSE)]
     .(new_from, weight)
   }][, .(weight = sum(weight)), by = new_from]
 
