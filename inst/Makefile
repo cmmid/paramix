@@ -15,7 +15,7 @@ DATDIR ?= input
 OUTDIR ?= output
 FIGDIR ?= figure
 
-localdef: allparam
+localdef: ${OUTDIR}/consolidated.rds
 
 ${DATDIR} ${OUTDIR} ${FIGDIR}:
 	mkdir -p $@
@@ -62,8 +62,13 @@ alldistill: $(patsubst %,${OUTDIR}/distill_%.rds,${ALLSCN})
 ${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
+allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
+
+${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
+	$(call R)
+
 # TODO what figs?
-${FIGDIR}/fig1.png: R/fig1.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
+${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds
 	$(call R)
 
 hw:

@@ -17,6 +17,6 @@ distill_dt <- readRDS(.args[2])
 
 yll_dt <- distill_dt[
   lex_dt, on = .(partition = age)
-][, .(YLL = sum(value*ex)), by = .(method)]
+][, .(YLL = sum(value*ex)), keyby = .(method, intervention)]
 
 yll_dt |> saveRDS(tail(.args, 1))
