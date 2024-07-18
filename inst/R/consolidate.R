@@ -12,5 +12,7 @@ place <- gsub("^(.*) .*$", "\\1", scenario)
 pathogen <- gsub("^.* (.*)$", "\\1", scenario)
 yll_dt[, place := place[.id]]
 yll_dt[, pathogen := pathogen[.id]]
+yll_dt$.id <- NULL
+
 
 yll_dt |> saveRDS(tail(.args, 1))
