@@ -15,7 +15,7 @@ DATDIR ?= input
 OUTDIR ?= output
 FIGDIR ?= figure
 
-localdef: ${OUTDIR}/consolidated.rds
+localdef: ${FIGDIR}/fig1.png
 
 ${DATDIR} ${OUTDIR} ${FIGDIR}:
 	mkdir -p $@
@@ -28,16 +28,16 @@ IFRSCN := SC2 FLU
 $(foreach pop,${POPSCN},$(foreach ifr,${IFRSCN},$(call $(eval ALLSCN += ${pop}_${ifr}))))
 
 # do some setup for the packages needed for this analysis
-.install_packages: install.R
-	$(call R)
+.setup: install.R
+	Rscript $^
 	touch $@
 
 # input population data
-${DATDIR}/population.rds: R/population.R | .install_packages ${DATDIR}
+${DATDIR}/population.rds: R/population.R | .setup ${DATDIR}
 	$(call R)
 
 # input life expectancy tables
-${DATDIR}/lex.rds: R/lex.R
+${DATDIR}/lex.rds: R/lex.R | .setup ${DATDIR}
 	$(call R)
 
 # input scenario data - use paramix::blend to create these
@@ -68,8 +68,5 @@ ${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${A
 	$(call R)
 
 # TODO what figs?
-${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds
+${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
 	$(call R)
-
-hw:
-	echo hello world

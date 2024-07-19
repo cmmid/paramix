@@ -28,17 +28,13 @@ f_ifr <- ifr_opts[[match.arg(.args[3], names(ifr_opts))]]
 
 model_agelimits <- c(0, 5, 20, 65, 101)
 
-ifr_params <- blend(
-  f_param = f_ifr,
-  densities = pop_dt,
-  model_partition = model_agelimits
-)
-
 mapping_dt <- alembic(
   f_param = f_ifr, densities = pop_dt,
   model_partition = model_agelimits,
   new_partition = pop_dt[, seq(min(from), max(from) + 1L)]
 )
+
+ifr_params <- blend(mapping_dt)
 
 save(
   model_agelimits, ifr_params, mapping_dt,
