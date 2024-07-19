@@ -2,16 +2,15 @@
 % Please edit documentation in R/aggregate.R
 \name{distill}
 \alias{distill}
-\title{Re-Map Compartmental Model Outcomes}
+\title{Distill Outcomes}
 \usage{
-distill(outcomes, mapping)
+distill(outcomes, alembic_dt)
 }
 \arguments{
 \item{outcomes}{a long-format \code{data.frame} with columns \code{model_part} and
 \code{value}, optionally others that will be preserved}
 
-\item{mapping}{see \code{\link[=alembic]{alembic()}}: a \code{data.frame} in accordance with the return
-of that function.}
+\item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
 }
 \value{
 a \code{data.frame} mirroring \code{outcomes}, but with

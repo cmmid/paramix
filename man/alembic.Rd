@@ -2,7 +2,7 @@
 % Please edit documentation in R/aggregate.R
 \name{alembic}
 \alias{alembic}
-\title{Create an Model Outcome Re-mapping}
+\title{Create the Blending and Distilling Object}
 \usage{
 alembic(
   f_param,
@@ -22,11 +22,18 @@ value.}
 \code{weight} column must be positive, but need not be normalized. Alternatively:
 a density function}
 
-\item{model_partition}{a numeric vector of cut points, which define the partition}
+\item{model_partition}{a numeric vector of cut points, which define the
+partitioning that will be used in the model}
 
-\item{new_partition}{the new partition of the underlying feature}
+\item{new_partition}{the partition of the underlying feature}
 
 \item{...}{optional arguments to \code{f_param}}
+
+\item{open_partitions}{a logical vector, \code{length(open_partition) == 2}.
+Whether the \code{partitions} argument should be evaluated as open on lower and/or
+upper ends - i.e. should \code{-Inf} and/or \code{Inf} be pre/appended to the
+\code{partition} argument. n.b., this can also be accomplished by directly
+including the \code{Inf}s in the partition.}
 }
 \value{
 a \code{data.frame} which maps fractions of the original model partitions
@@ -34,7 +41,7 @@ to the desired partitions, according to underlying relative outcome rates and
 densities
 }
 \description{
-Create an Model Outcome Re-mapping
+Create the Blending and Distilling Object
 }
 \examples{
 ifr_levin <- function(age_in_years) {
