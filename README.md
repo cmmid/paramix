@@ -16,8 +16,8 @@ remotes::install_github("cmmid/paramix")
 
 ## Usage
 
-### Aggregation
+Briefly, there are three steps:
 
-To create parameters, you'll need a parameter function, a density weighting (either a function or series of values), and partition points.
-
-### Disaggregation
+ - create a translation object (`alembic`) based on the parameter function (e.g. the infection fatality ratio as a function of age), the density distribution of the pertinent feature (e.g. the population age pyramid), the model partitions of the feature (e.g. age groups), and the post-processing partitions of the feature (e.g. age in years).
+ - create model parameters (`blend`) from the alembic
+ - apply the alembic to model results (`distill`) to impute higher resolution outcomes
