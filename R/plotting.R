@@ -13,16 +13,21 @@ parameter_summary <- function(
 ) {
   partition <- make_partition(model_partition, open_partition = c(FALSE, FALSE))
 
+  alembic_dt <- alembic(
+    f_param, densities, partition,
+    seq(partition[1], tail(partition, 1), length.out = resolution)
+  )
+
   plot_dt <- data.table::data.table(
     x = seq(partition[1], tail(partition, 1), length.out = resolution)
   )[, f_val := f_param(x) ]
 
   plot_dt[, model_category := findInterval(x, model_partition, all.inside = TRUE)]
 
-  blended <- blend(f_param, densities, partition, ...)
+  blended <- blend(alembic_dt)
 
   plot_dt[, c("f_mean", "mean_f", "wm_f") := .(
-    f_param(mean(x)), mean(f_param(x)), blended[.GRP]
+    f_param(mean(x)), mean(f_param(x)), blended[.GRP, value]
   ), by = model_category]
 
   data.table::melt.data.table(
@@ -51,27 +56,31 @@ distill_summary <- function(
 ) {
   setDT(model_outcomes_dt)
   model_partitions <- c(
-    model_outcomes_dt[, unique(from)],
+    model_outcomes_dt[, unique(model_from)],
     mapping_dt[, max(new_from)]
   )
 
   density_dt <- density_dt[,{
-    new_from <- mapping_dt$new_from[findInterval(from, mapping_dt$new_from, rightmost.closed = FALSE)]
+    new_from <- mapping_dt$new_from[
+      findInterval(from, mapping_dt$new_from, rightmost.closed = FALSE)
+    ]
     .(new_from, weight)
   }][, .(weight = sum(weight)), by = new_from]
 
   return(rbind(
     # approach 1: all outcomes at mean age
-    model_outcomes_dt[order(from), .(
-      partition = floor((head(model_partitions, -1) + tail(model_partitions, -1))/2),
-      value, method = "mean_age"
+    model_outcomes_dt[order(model_from), .(
+      partition = (head(model_partitions, -1) + tail(model_partitions, -1))/2,
+      value, method = "mean_partition"
     )],
 
     # approach 2: outcomes spread uniformly within group
-    model_outcomes_dt[, {
-      parts <- mapping_dt[model_from == from, new_from]
+    model_outcomes_dt[
+      mapping_dt, on = .(model_from), allow.cartesian = TRUE
+    ][, {
+      parts <- new_from
       .(partition = parts, value = value / length(parts))
-    }, by = from][, .(
+    }, by = model_from][, .(
       partition, value, method = "uniform_model")
     ],
 
@@ -80,15 +89,12 @@ distill_summary <- function(
     # approach 3: proportionally to age distribution within the group
     density_dt[
       mapping_dt, on = .(new_from)
-    ][model_outcomes_dt, on = .(model_from = from)][, .(
+    ][model_outcomes_dt, on = .(model_from)][, .(
       partition = new_from, value = value * weight / sum(weight)
-    ), by = .(model_from)][, .(partition, value, method = "uniform_age")],
+    ), by = .(model_from)][, .(partition, value, method = "proportional_density")],
 
     # approach 4: proportionally to age *and* relative mortality rates
-    model_outcomes_dt[
-      mapping_dt, on = .(from = model_from), .(
-        partition = new_from, value = value * model_fraction
-      )][, method := "alembic_weighted"]
+    distill(model_outcomes_dt, mapping_dt)[, method := "alembic_weighted"] |> setnames("new_from", "partition")
   ))
 
 }

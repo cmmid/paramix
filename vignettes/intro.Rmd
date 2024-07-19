@@ -139,20 +139,21 @@ In the previous section, we used a convenience method the package provides for p
 Revisiting our previous example, the properly age-weighted IFRs look like:
 
 ```{r params}
-params <- sapply(c("Afghanistan", "United Kingdom"), function(nm) {
-  paramix::blend(
-    ifr_levin, densities = density_dt[name == nm],
-    model_partition = model_agelimits
-  )
-})
+# setup the model to outcome mapping using `alembic`s
+mapping_dt <- density_dt[, 
+  paramix::alembic(
+    ifr_levin, densities = .SD,
+    model_partition = model_agelimits,
+    new_partition = seq(min(from), max(from) + 1L)
+  ),
+  by = name
+]
+
+params <- mapping_dt[, paramix::blend(.SD), by=name]
 ```
 
 ```{r paramstbl, echo = FALSE}
-tbl <- signif(params, digits = 2)
-row.names(tbl) <- paste(
-  head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
-)
-knitr::kable(tbl, align = c("c", "c"), )
+params |> dcast(model_from ~ name)
 ```
 
 These parameters are now weighted for use in a model assuming those age categories and populations. Great! However: once you run that model, you might want to disaggregate an outcome, such as for example converting deaths into years of life lost.
@@ -183,9 +184,10 @@ model_density_dt <- density_dt[,.(
 ), by = name][, .(weight = sum(weight)), by = .(name, model_from)][,
   weight := weight/sum(weight), by = name
 ]
-model_deaths_dt <- model_density_dt[,
-  .(model_from, deaths = weight * 1e6 * params[, name]),
-  by = name
+model_deaths_dt <- model_density_dt[
+  params, on = .(name, model_from)
+][,
+  .(name, model_from, deaths = weight * 1e6 * value)
 ]
 ```
 
@@ -196,55 +198,23 @@ row.names(tbl2) <- paste(head(model_agelimits, -1), tail(model_agelimits, -1) - 
 knitr::kable(tbl2)
 ```
 
-For these approaches, we get the following distribution of deaths by age category:
+For convenience, `paramix` can compute all approaches mentioned above for comparison:
 
 ```{r alembicsetup}
-# setup the model to outcome mapping using `alembic`s
-mapping_dt <- density_dt[, 
-  paramix::alembic(
-    ifr_levin, densities = .SD,
-    model_partition = model_agelimits,
-    new_partition = seq(min(from), max(from) + 1L)
+distill_methods_dt <- model_deaths_dt[,
+  paramix::distill_summary(
+    .SD[,.(model_from, value = deaths)],
+    density_dt[name == .BY],
+    mapping_dt[name == .BY]
   ),
   by = name
 ]
-
-distill_methods_dt <- rbind(
-# approach 1: all deaths at mean age
-model_deaths_dt[, .(
-  name,
-  age = floor((head(model_agelimits, -1) + tail(model_agelimits, -1) - 1)/2),
-  deaths,
-  method = "mean_age"
-)],
-
-# approach 2: deaths spread uniformly within group
-model_deaths_dt[, {
-  all_ages <- mapply(seq, from = model_from, to = model_agelimits[-1] - 1L, MoreArgs = list(by = 1))
-  mapply(
-    \(ages, total) data.table(age = ages, deaths = total / length(ages)),
-    ages = all_ages, total = deaths,
-    SIMPLIFY = FALSE
-  ) |> rbindlist()
-}, by = name][, method := "uniform_model"],
-
-# approach 3: proportionally to age distribution within the group
-density_dt[
-  mapping_dt, on = .(name, from = new_from)
-][model_deaths_dt, on = .(name, model_from)][, .(
-  age = from, deaths = deaths * weight / sum(weight)
-), by=.(name, model_from)][, .(name, age, deaths, method = "uniform_age")],
-
-# approach 4: proportionally to age *and* relative mortality rates
-model_deaths_dt[
-  mapping_dt, on = .(name, model_from), .(
-  name, age = new_from, deaths = deaths * model_fraction
-)][, method := "alembic_weighted"]
-)
 ```
 
+You can see the calculations by entering `paramix::distill_summary` (no parenthesis) at an R prompt. Plotted, the results look like:
+
 ```{r alembicplot, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
-ggplot(distill_methods_dt) + aes(x = age, y = deaths, color = method) +
+ggplot(distill_methods_dt) + aes(x = partition, y = value, color = method) +
   facet_grid(. ~ name) +
   geom_point() +
   theme_minimal() + theme(
@@ -255,13 +225,13 @@ ggplot(distill_methods_dt) + aes(x = age, y = deaths, color = method) +
   scale_x_continuous("Age") +
   scale_color_discrete(
     "Method",
-    breaks = c("mean_age", "uniform_model", "alembic_weighted", "uniform_age"),
-    labels = c(
-      mean_age = "Deaths @ Mean Group Age",
+    breaks = c("mean_partition", "uniform_model", "alembic_weighted", "proportional_density"),
+    labels = \(b) c(
+      mean_partition = "Deaths @ Mean Group Age",
       uniform_model = "Deaths Uniform Across Age Group",
       alembic_weighted = "paramix Approach",
-      uniform_age = "Deaths Proportional to Age Distribution"
-    )
+      proportional_density = "Deaths Proportional to Age Distribution"
+    )[as.character(b)]
   )
 ```
 When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years-life-lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
@@ -288,9 +258,18 @@ life_expectancy_dt[,
 ]
 life_expectancy_dt[, ex := rev(cumsum(rev(Lx)/1000)), by = name]
 
+# because of the selected breakpoints, there are some half-ages, so will
+# manually add those as mean of age & age + 1 ex (ignoring other features)
+life_expectancy_dt <- rbind(
+  life_expectancy_dt,
+  life_expectancy_dt[age %in% c(2, 12, 42, 82)][, age := age + 0.5][,
+    ex := (ex + life_expectancy_dt[age %in% (c(2, 12, 42, 82) + 1L)]$ex)/2
+  ]
+)
+
 yll_dt <- distill_methods_dt[
-  life_expectancy_dt, on = .(name, age)
-][, .(YLL = sum(deaths*ex)), by = .(name, method)]
+  life_expectancy_dt, on = .(name, partition = age)
+][, .(YLL = sum(value*ex)), by = .(name, method)]
 
 yllord <- yll_dt[name == "Afghanistan", method[order(YLL)]]
 

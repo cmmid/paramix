@@ -13,18 +13,6 @@ parameter_summary(
 )
 }
 \arguments{
-\item{f_param}{a function, \code{f(x, ...)} which operates on the feature
-(e.g. age), and optionally additional arguments, and yields the parameter
-value.}
-
-\item{densities}{a \code{data.frame} with numeric columns \code{from} and \code{weight}. The
-\code{weight} column must be positive, but need not be normalized. Alternatively:
-a density function}
-
-\item{model_partition}{a numeric vector of cut points, which define the partition}
-
-\item{...}{optional arguments to \code{f_param}}
-
 \item{resolution}{the number of points to calculate for the underlying
 \code{f_param} line}
 }
