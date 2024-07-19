@@ -1,4 +1,7 @@
 input/*
 output/*
 figure/*
-.install_packages
+
+renv/*
+!renv/activate.R
+!renv/settings.json

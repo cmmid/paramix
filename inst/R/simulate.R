@@ -18,6 +18,7 @@ load(.args[2])
 ############## WARNING: NEEDS TO REPLACED #################
 
 ### TODO actually run a simulation
+### TODO ensure consistent total vaccine distribution
 
 dt <- CJ(
   intervention = c(
@@ -25,7 +26,7 @@ dt <- CJ(
   ),
   age_group = head(model_agelimits, -1)
 )
-dt[, deaths := rep(ifr_params*1e6, 4)]
+dt[ifr_params, on = .(age_group = model_from), deaths := value*1e6]
 dt[intervention == "vax_elderly" & age_group == 65, deaths := deaths*0.3]
 dt[intervention == "vax_young" & age_group == 5, deaths := deaths*0.3]
 dt[intervention == "vax_working" & age_group == 20, deaths := deaths*0.3]
