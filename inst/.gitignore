@@ -1,6 +1,7 @@
 input/*
 output/*
 figure/*
+.setup
 
 renv/*
 !renv/activate.R
