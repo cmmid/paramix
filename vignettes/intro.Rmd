@@ -227,7 +227,7 @@ ggplot(distill_methods_dt) + aes(x = partition, y = value, color = method) +
     legend.position = "inside", legend.position.inside = c(1, 0),
     legend.justification.inside = c(1, 0), text = element_text(size = 10)
   ) +
-  scale_y_log10("Deaths\n(log 10 scale)") +
+  scale_y_log10("Deaths (log 10 scale)") +
   scale_x_continuous("Age") +
   scale_color_discrete(
     "Method",
