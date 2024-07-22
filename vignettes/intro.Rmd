@@ -42,6 +42,7 @@ ifr_levin <- function(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
   scaled / (100 + scaled)
 }
+plot(0:100,ifr_levin(0:100),type='l',xlab='Age',ylab='Infection-fatality ratio')
 ```
 
 One typical measurement of public health outcomes is "years life lost" (YLL). Based on population level demography, we can estimate how many years individuals at various ages can expect to live. People that die of a modeled illness lose a corresponding number of years of life. 
