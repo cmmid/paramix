@@ -179,7 +179,7 @@ $$
 
 We know that $\textrm{P}\left(\textrm{Age}\right)$ is the relative fraction of an age within any age group, and $\frac{\textrm{P}\left(\textrm{Death} \vert \textrm{Age}\right)}{\textrm{P}\left(\textrm{Death}\right)}$ is the relative mortality rate for that age within that same age group. We can therefore use those terms to calculate $\textrm{P}\left(\textrm{Age} \vert \textrm{Death}\right)$, and allocate the mortality outcomes accordingly.
 
-For demonstration purposes, let's assume that one million infections occur proportionally across the model population groups[^2]. How would these translate into age-specific deaths, based on these different calculation methods? The *proportional to age and relative mortality rates* method converts these infections to deaths as follows:
+For demonstration purposes, let's assume that one million infections occur proportionally across the model population groups[^2]. Using our properly-weighted IFR values for each age group from above, these infections result in deaths as follows:
 
 [^2]: More typically, the distribution of infections would reflect other factors such as varying contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.
 
@@ -204,7 +204,7 @@ row.names(tbl2) <- paste(head(model_agelimits, -1), tail(model_agelimits, -1) - 
 knitr::kable(tbl2)
 ```
 
-For convenience, `paramix` can compute all approaches mentioned above for comparison:
+How would these translate into age-specific deaths, based on these different calculation methods? For convenience, `paramix` can compute all approaches mentioned above for comparison:
 
 ```{r alembicsetup}
 distill_methods_dt <- model_deaths_dt[,
