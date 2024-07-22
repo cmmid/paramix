@@ -20,9 +20,11 @@ parameter_summary <- function(
 
   plot_dt <- data.table::data.table(
     x = seq(partition[1], tail(partition, 1), length.out = resolution)
-  )[, f_val := f_param(x) ]
+  )[, f_val := f_param(x)]
 
-  plot_dt[, model_category := findInterval(x, model_partition, all.inside = TRUE)]
+  plot_dt[,
+    model_category := findInterval(x, model_partition, all.inside = TRUE)
+  ]
 
   blended <- blend(alembic_dt)
 
@@ -60,7 +62,7 @@ distill_summary <- function(
     mapping_dt[, max(new_from)]
   )
 
-  density_dt <- density_dt[,{
+  density_dt <- density_dt[, {
     new_from <- mapping_dt$new_from[
       findInterval(from, mapping_dt$new_from, rightmost.closed = FALSE)
     ]
@@ -70,7 +72,7 @@ distill_summary <- function(
   return(rbind(
     # approach 1: all outcomes at mean age
     model_outcomes_dt[order(model_from), .(
-      partition = (head(model_partitions, -1) + tail(model_partitions, -1))/2,
+      partition = (head(model_partitions, -1) + tail(model_partitions, -1)) / 2,
       value, method = "mean_partition"
     )],
 
@@ -89,12 +91,19 @@ distill_summary <- function(
     # approach 3: proportionally to age distribution within the group
     density_dt[
       mapping_dt, on = .(new_from)
-    ][model_outcomes_dt, on = .(model_from)][, .(
-      partition = new_from, value = value * weight / sum(weight)
-    ), by = .(model_from)][, .(partition, value, method = "proportional_density")],
+    ][
+      model_outcomes_dt, on = .(model_from)
+    ][, .(
+        partition = new_from, value = value * weight / sum(weight)
+      ),
+      by = .(model_from)
+    ][, .(partition, value, method = "proportional_density")],
 
     # approach 4: proportionally to age *and* relative mortality rates
-    distill(model_outcomes_dt, mapping_dt)[, method := "alembic_weighted"] |> setnames("new_from", "partition")
+    setnames(
+      distill(model_outcomes_dt, mapping_dt)[, method := "alembic_weighted"],
+      "new_from", "partition"
+    )
   ))
 
 }

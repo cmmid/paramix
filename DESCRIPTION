@@ -17,8 +17,8 @@ License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
-Remotes: PPgp/wpp2022
-Suggests: 
+Suggests:
+    lintr,
     knitr,
     rmarkdown,
     ggplot2,

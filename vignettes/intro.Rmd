@@ -1,8 +1,8 @@
 ---
-title: "Introductory Usage"
+title: "Introductory Usage: `paramix`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{intro}
+  %\VignetteIndexEntry{paramix}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-options(scipen=100000)
+options(scipen = 100000)
 ```
 
 ```{r setup, echo = FALSE}
@@ -94,7 +94,10 @@ plot_dt <- density_dt[, {
 }, by = name][
   name == "Afghanistan" | method == "wm_f"
 ][,
-  method := fifelse(method == "wm_f", fifelse(name == "Afghanistan", "af_wm_f", "uk_wm_f"), method)
+  method := fifelse(
+    method != "wm_f", method,
+    fifelse(name == "Afghanistan", "af_wm_f", "uk_wm_f")
+  )
 ][, .SD, .SDcols = -c("name")]
 # parameter_summary yields method in (f_val, f_mean, mean_f, wm_f)
 # with the exception of wm_f, these are independent of density, so we can drop
@@ -109,8 +112,8 @@ pop_p <- ggplot(density_dt) + aes(from, weight) + geom_bar(stat = "identity") +
   scale_x_continuous("Age", expand = expansion()) +
   scale_y_continuous("Population (thousands)") +
   theme_minimal() + theme(panel.spacing.x = unit(1.5, "line"))
-  
-ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) + 
+
+ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
   geom_line(data = \(dt) dt[method == "f_val"], lwd = 0.8, lty = "dotted") +
   geom_step(data = \(dt) dt[method != "f_val"]) +
   scale_color_discrete(
@@ -146,7 +149,7 @@ Revisiting our previous example, the properly age-weighted IFRs look like:
 
 ```{r params}
 # setup the model to outcome mapping using `alembic`s
-mapping_dt <- density_dt[, 
+mapping_dt <- density_dt[,
   paramix::alembic(
     ifr_levin, densities = .SD,
     model_partition = model_agelimits,
@@ -155,7 +158,7 @@ mapping_dt <- density_dt[,
   by = name
 ]
 
-params <- mapping_dt[, paramix::blend(.SD), by=name]
+params <- mapping_dt[, paramix::blend(.SD), by = name]
 ```
 
 ```{r paramstbl, echo = FALSE}
@@ -184,11 +187,11 @@ For demonstration purposes, let's assume that one million infections occur propo
 [^2]: More typically, the distribution of infections would reflect other factors such as varying contact patterns. How the infections are actually distributed would determine the particular quantitative differences for our demonstration, but not the qualitative point.
 
 ```{r modeldeaths}
-model_density_dt <- density_dt[,.(
+model_density_dt <- density_dt[, .(
   model_from = model_agelimits[findInterval(from, model_agelimits)],
   weight
 ), by = name][, .(weight = sum(weight)), by = .(name, model_from)][,
-  weight := weight/sum(weight), by = name
+  weight := weight / sum(weight), by = name
 ]
 model_deaths_dt <- model_density_dt[
   params, on = .(name, model_from)
@@ -198,9 +201,13 @@ model_deaths_dt <- model_density_dt[
 ```
 
 ```{r deathtbl, echo = FALSE}
-tbl2 <- model_deaths_dt |> dcast.data.table(model_from ~ name, value.var = "deaths") |> as.data.frame()
+tbl2 <- as.data.frame(
+  dcast.data.table(model_deaths_dt, model_from ~ name, value.var = "deaths")
+)
 tbl2$model_from <- NULL
-row.names(tbl2) <- paste(head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - ")
+row.names(tbl2) <- paste(
+  head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
+)
 knitr::kable(tbl2)
 ```
 
@@ -209,7 +216,7 @@ How would these translate into age-specific deaths, based on these different cal
 ```{r alembicsetup}
 distill_methods_dt <- model_deaths_dt[,
   paramix::distill_summary(
-    .SD[,.(model_from, value = deaths)],
+    .SD[, .(model_from, value = deaths)],
     density_dt[name == .BY],
     mapping_dt[name == .BY]
   ),
@@ -231,13 +238,18 @@ ggplot(distill_methods_dt) + aes(x = partition, y = value, color = method) +
   scale_x_continuous("Age") +
   scale_color_discrete(
     "Method",
-    breaks = c("mean_partition", "uniform_model", "alembic_weighted", "proportional_density"),
-    labels = \(b) c(
-      mean_partition = "Deaths at mean age",
-      uniform_model = "Deaths uniform across age group",
-      alembic_weighted = "paramix approach",
-      proportional_density = "Deaths proportional to age distribution"
-    )[as.character(b)]
+    breaks = c(
+      "mean_partition", "uniform_model",
+      "alembic_weighted", "proportional_density"
+    ),
+    labels = function(b) {
+      c(
+        mean_partition = "Deaths @ Mean Group Age",
+        uniform_model = "Deaths Uniform Across Age Group",
+        alembic_weighted = "paramix Approach",
+        proportional_density = "Deaths Proportional to Age Distribution"
+      )[as.character(b)]
+    }
   )
 ```
 When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years of life lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
@@ -245,58 +257,64 @@ When we combine these different deaths-by-age with life expectancy estimates, we
 ```{r, figlex, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 3, dpi = 600}
 data("mxB1")
 life_expectancy_dt <- setDT(mxB1)[
-  name %in% c('United Kingdom','Afghanistan'),
+  name %in% c("Afghanistan", "United Kingdom"),
   .(name, age, mx = `2021`)
-][, ax := fifelse(age == 0, 0.2, 0.5) ][,
-  qx := fifelse(age == max(age), 1, mx / (1 + mx*(1-ax)))
+][,
+  ax := fifelse(age == 0, 0.2, 0.5)
+][,
+  qx := fifelse(age == max(age), 1, mx / (1 + mx * (1 - ax)))
 ]
 life_expectancy_dt[age == 0, lx := 1000]
 life_expectancy_dt[, lx := {
   tmp <- lx
   for (i in 2:.N) {
-    tmp[i] <- (1-qx[i-1])*tmp[i-1]
+    tmp[i] <- (1 - qx[i - 1]) * tmp[i - 1]
   }
   tmp
 }, by = name]
 life_expectancy_dt[,
-  Lx := c(tail(lx, -1) + head(ax, -1)*(head(lx, -1) - tail(lx, -1)), tail(lx, 1)),
-  by = name
+  Lx := c(
+    tail(lx, -1) + head(ax, -1) * (head(lx, -1) - tail(lx, -1)),
+    tail(lx, 1)
+  ), by = name
 ]
-life_expectancy_dt[, ex := rev(cumsum(rev(Lx)/1000)), by = name]
+life_expectancy_dt[, ex := rev(cumsum(rev(Lx) / 1000)), by = name]
 
 # because of the selected breakpoints, there are some half-ages, so will
 # manually add those as mean of age & age + 1 ex (ignoring other features)
 life_expectancy_dt <- rbind(
   life_expectancy_dt,
   life_expectancy_dt[age %in% c(2, 12, 42, 82)][, age := age + 0.5][,
-    ex := (ex + life_expectancy_dt[age %in% (c(2, 12, 42, 82) + 1L)]$ex)/2
+    ex := (ex + life_expectancy_dt[age %in% (c(2, 12, 42, 82) + 1L)]$ex) / 2
   ]
 )
 
 yll_dt <- distill_methods_dt[
   life_expectancy_dt, on = .(name, partition = age)
-][, .(YLL = sum(value*ex)), by = .(name, method)]
+][, .(YLL = sum(value * ex)), by = .(name, method)]
 
 yllord <- yll_dt[name == "Afghanistan", method[order(YLL)]]
 
 yll_dt[, method := factor(method, levels = yllord, ordered = TRUE)]
 yll_dt$method <- factor(yll_dt$method, levels=c('alembic_weighted','mean_partition','uniform_model','proportional_density'))
 
-ggplot(yll_dt) + aes(x = name, y = YLL/1e4, fill = method) +
-  geom_bar(position = 'dodge', stat = 'identity') + 
-  theme_minimal() + 
+ggplot(yll_dt) + aes(x = name, y = YLL / 1e4, fill = method) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme_minimal() +
   theme(
     legend.position = "inside", legend.position.inside = c(0.1, 0.9),
     legend.justification.inside = c(0, 1), text = element_text(size = 8)
   ) +
-  scale_fill_brewer("Method", palette = 'Set1',
-                      labels = \(b) c(
-                        mean_partition = "Deaths at mean age",
-                        uniform_model = "Deaths uniform across age group",
-                        alembic_weighted = "paramix approach",
-                        proportional_density = "Deaths proportional to age distribution"
-                      )[as.character(b)]) + 
-  ylab('YLLs per one million infections\n(10,000 person-years)') + xlab('Country')
+  scale_fill_brewer("Method", palette = 'Set1', labels = function(b) {
+    c(
+      mean_partition = "Deaths at mean age",
+      uniform_model = "Deaths uniform across age group",
+      alembic_weighted = "paramix approach",
+      proportional_density = "Deaths proportional to age distribution"
+    )[as.character(b)]
+  }) + 
+  ylab('YLLs per one million infections\n(10,000 person-years)') +
+  xlab('Country')
 ```
 
 # Summary
