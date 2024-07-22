@@ -37,12 +37,14 @@ The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mor
 
 [^1]: [Assessing the age specificity of infection fatality rates for COVID-19: systematic review, meta-analysis, and public policy implications](https://doi.org/10.1007/s10654-020-00698-1)
 
-```{r ifrfdef}
+```{r ifrfdef,out.width = "100%",dpi = 600,fig.width = 8,fig.height = 3}
 ifr_levin <- function(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
   scaled / (100 + scaled)
 }
-plot(0:100,ifr_levin(0:100),type='l',xlab='Age',ylab='Infection-fatality ratio')
+ggplot(data=data.frame(x=0:100,y=ifr_levin(0:100)),aes(x,y)) +
+         geom_line() + theme_minimal() + 
+         xlab('Age') + ylab('Infection-fatality ratio')
 ```
 
 One typical measurement of public health outcomes is "years life lost" (YLL). Based on population level demography, we can estimate how many years individuals at various ages can expect to live. People that die of a modeled illness lose a corresponding number of years of life. 
