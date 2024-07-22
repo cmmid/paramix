@@ -50,24 +50,24 @@ ggplot(data=data.frame(x=0:100,y=ifr_levin(0:100)),aes(x,y)) +
          xlab('Age') + ylab('Infection-fatality ratio')
 ```
 
-One typical measurement of public health outcomes is "years life lost" (YLL). Based on population level demography, we can estimate how many years individuals at various ages can expect to live. People that die of a modeled illness lose a corresponding number of years of life. 
+One typical measurement of public health outcomes is "years life lost" (YLLs). Based on age-specific mortality data, we can estimate how many years individuals at various ages can expect to live. People who die of a modeled illness lose a corresponding number of years of life, depending on their age at death. 
 
-For this vignette, we will work from the continuous IFR relationship, to compartmental aggregate IFR and deaths by group, back to by-year deaths and finally to estimating YLLs.
+In this vignette, we will turn a continuous IFR relationship into compartmental aggregate IFR and deaths for broader age groups, back to age-specific deaths, and use these to estimate YLLs.
 
 ## Parametrizing a Compartmental Model
 
-Typically in ODE compartmental models have low-resolution stratification combining several ages, for computational reasons, because of low-resolution data on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
+Typically, ODE compartmental models have low-resolution stratification combining several ages for computational reasons, because of low-resolution data on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
 
-When mixing several ages into a single compartment, what is the properly blended version of parameters like IFR? Generally, $E\left[f\left(x\right)\right] \ne f\left(E\left[x\right]\right)$, so simply using the IFR at the mean age for the compartment is not guaranteed correct. The average IFR over the age range is more correct, but that assumes uniform distribution of individuals by age, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
+When mixing several ages into a single compartment, what is the properly aggregated value of parameters like the IFR? Generally, $E\left[f\left(x\right)\right] \ne f\left(E\left[x\right]\right)$, so simply using the IFR at the mean age for the compartment is not guaranteed to be correct. The average IFR over the age range is more reasonable, but that assumes a uniform distribution of individuals by age, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
 
 $$
 \textrm{IFR}\Big\rvert_a^b = \frac{\int_a^b \textrm{IFR}(\textrm{age})\rho(\textrm{age})d\textrm{age}}{\int_a^b \rho(\textrm{age})d\textrm{age}}
 $$
 
-Let's compare the various calculations of IFR for two different population age distributions: Afghanistan and the United Kingdom. Recall, we have considered using:
+We can compare the various calculations of the IFR for two different population age distributions: Afghanistan and the United Kingdom. Recall, we have considered using:
 
  - the average age in the function, i.e. $\textrm{IFR}(\frac{a+b}{2})$
- - the function average, assuming uniform age distribution, i.e. $\int_a^b \textrm{IFR}(\textrm{age})d\textrm{age}$
+ - the function average, assuming uniform age distribution, i.e. $\int_a^b \textrm{IFR}(\textrm{age}) d\textrm{age}$
  - the weighted function average (as above)
 
 Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and [65,101), corresponding roughly to pre-school age children, school age individuals, prime working age adults, and post-working age adults. First, we need to get the relevant values:
@@ -84,7 +84,7 @@ density_dt <- popAge1dt[
 rm(popAge1dt)
 ```
 
-Now let's make a plot of the IFR values for the different age groups, under different approaches to computing them. We'll use the package function `parameter_summary()`, which provides a convenient comparison of the parameter values for these approaches to summarisation:
+We can calculate the IFR values for each model age group, under different approaches to computing them. We'll use the package function `parameter_summary()`, which provides a convenient comparison of the parameter values for these approaches to summarisation:
 
 ```{r ifrplotsetup, cache=TRUE}
 plot_dt <- density_dt[, {
@@ -121,8 +121,8 @@ ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
       af_wm_f = "AF-weighted E[f(age)]", uk_wm_f = "UK-weighted E[f(age)]"
     )
   ) +
-  scale_y_continuous("Infection-fatality ratio\n(IFR)", expand = expansion()) +
-  scale_x_continuous("Age (years)", breaks = 10 * (0:10), expand = expansion()) +
+  scale_y_continuous("Infection-fatality ratio", expand = expansion()) +
+  scale_x_continuous("Age", breaks = 10 * (0:10), expand = expansion()) +
   theme_minimal() +
   theme(
     legend.position = "inside", legend.position.inside = c(0.1, 1),
@@ -132,7 +132,7 @@ ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
 (pop_p / ifr_p) & theme(text = element_text(size = 10))
 ```
 
-Clearly, these different approaches would result in different mortality outcomes for otherwise identical infection patterns. 
+Clearly, these different approaches result in different mortality outcomes for otherwise identical infection patterns. 
 
 ## Typical Application
 
