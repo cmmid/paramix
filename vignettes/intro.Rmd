@@ -33,7 +33,7 @@ In this vignette, we demonstrate applying these functions from an initial functi
 
 ## Motivating Example
 
-The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mortality rate. In a meta-analysis, Levin et al[^1] estimates the age-specific infection fatality ratio (IFR) for COVID-19 as:
+The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mortality rate. In a meta-analysis, Levin et al[^1] estimates the age-specific infection-fatality ratio (IFR) for COVID-19 as:
 
 [^1]: [Assessing the age specificity of infection fatality rates for COVID-19: systematic review, meta-analysis, and public policy implications](https://doi.org/10.1007/s10654-020-00698-1)
 
@@ -104,7 +104,7 @@ And plotting these different blends:
 pop_p <- ggplot(density_dt) + aes(from, weight) + geom_bar(stat = "identity") +
   facet_grid(cols = vars(name)) +
   scale_x_continuous("Age", expand = expansion()) +
-  scale_y_continuous("Population [1K]") +
+  scale_y_continuous("Population (thousands)") +
   theme_minimal() + theme(panel.spacing.x = unit(1.5, "line"))
   
 ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) + 
@@ -118,8 +118,8 @@ ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
       af_wm_f = "AF-weighted E[f(age)]", uk_wm_f = "UK-weighted E[f(age)]"
     )
   ) +
-  scale_y_continuous("Infection Fatality Ratio\n(IFR)", expand = expansion()) +
-  scale_x_continuous("Age [years]", breaks = 10 * (0:10), expand = expansion()) +
+  scale_y_continuous("Infection-fatality ratio\n(IFR)", expand = expansion()) +
+  scale_x_continuous("Age (years)", breaks = 10 * (0:10), expand = expansion()) +
   theme_minimal() +
   theme(
     legend.position = "inside", legend.position.inside = c(0.1, 1),
