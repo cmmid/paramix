@@ -198,7 +198,7 @@ alembic <- function(
 #'
 #' @inheritParams blend
 #'
-#' @param outcomes a long-format `data.frame` with columns `model_part` and
+#' @param outcomes a long-format `data.frame` with columns `model_from` and
 #' `value`, optionally others that will be preserved
 #'
 #' @return a `data.frame` mirroring `outcomes`, but with
