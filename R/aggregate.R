@@ -29,8 +29,10 @@ make_partition <- function(
   open_partition <- as.logical(open_partition)
 
   stopifnot(
-    "Open indicator must be length 1 or 2." = length(open_partition) %in% c(1, 2),
-    "Must provide values interpretable as logical." = !any(is.na(open_partition))
+    "Open indicator must be length 1 or 2." =
+      length(open_partition) %in% c(1, 2),
+    "Must provide values interpretable as logical." =
+      !any(is.na(open_partition))
   )
 
   if (length(open_partition) == 1) open_partition[2] <- open_partition[1]
@@ -88,7 +90,9 @@ make_weight <- function(f_param, f_density) {
 #'   type = "s", col = "firebrick"
 #' )
 #' # properly aggregated, but not accounting for age distribution
-#' bad_alembic_dt <- alembic(ifr_levin, within(age_pyramid, weight <- 1), age_limits, 0:100)
+#' bad_alembic_dt <- alembic(
+#'   ifr_levin, within(age_pyramid, weight <- 1), age_limits, 0:100
+#' )
 #' ifr_unif <- blend(bad_alembic_dt)
 #' lines(
 #'   age_limits, c(ifr_unif$value, tail(ifr_unif$value, 1)),
@@ -98,7 +102,7 @@ make_weight <- function(f_param, f_density) {
 blend <- function(
   alembic_dt
 ) {
-  return(alembic_dt[, .(value = sum(weight) / sum(density)), by = model_from ])
+  return(alembic_dt[, .(value = sum(weight) / sum(density)), by = model_from])
 }
 
 #' @title Create the Blending and Distilling Object
@@ -160,11 +164,13 @@ alembic <- function(
     densities
   } else {
     approxrule <- c(1, 1)
-    if (!open_partition[1] & overall_partition[1] < min(densities$from)) {
+    if (!open_partition[1] && overall_partition[1] < min(densities$from)) {
       approxrule[1] <- 2
     }
 
-    if (!open_partition[2] & tail(overall_partition, 1) > max(densities$from)) {
+    if (
+      !open_partition[2] && tail(overall_partition, 1) > max(densities$from)
+    ) {
       approxrule[2] <- 2
     }
 
@@ -179,12 +185,17 @@ alembic <- function(
     weight <- numeric(length(from))
     dense <- numeric(length(from))
     for (i in seq_along(weight)) {
-      weight[i] <- integrate(f, lowers[i], uppers[i], subdivisions = 1000L)$value
-      dense[i] <- integrate(f_density, lowers[i], uppers[i], subdivisions = 1000L)$value
+      weight[i] <- integrate(
+        f, lowers[i], uppers[i], subdivisions = 1000L
+      )$value
+      dense[i] <- integrate(
+        f_density, lowers[i], uppers[i], subdivisions = 1000L
+      )$value
     }
-#    weight <- weight / aggregate(weight, by = list(model_part), FUN = sum)[model_part,]$x
-    .(model_from = model_partition[model_part],
-      new_from = new_partition[new_part], weight = weight, density = dense)
+    .(
+      model_from = model_partition[model_part],
+      new_from = new_partition[new_part], weight = weight, density = dense
+    )
   }])
 
 }
@@ -210,13 +221,13 @@ distill <- function(
 
   setnames(setDT(outcomes), "from", "model_from", skip_absent = TRUE)
 
-  mapping <- alembic_dt[,.(
-    new_from, model_fraction = weight/sum(weight)),
+  mapping <- alembic_dt[, .(
+    new_from, model_fraction = weight / sum(weight)),
     by = model_from
   ]
 
   return(outcomes[mapping, on = .(model_from)][, .(
-    value = sum(value*model_fraction)
+    value = sum(value * model_fraction)
   ), by = new_from])
 
 }
