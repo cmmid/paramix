@@ -37,11 +37,14 @@ The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mor
 
 [^1]: [Assessing the age specificity of infection fatality rates for COVID-19: systematic review, meta-analysis, and public policy implications](https://doi.org/10.1007/s10654-020-00698-1)
 
-```{r ifrfdef,out.width = "100%",dpi = 600,fig.width = 8,fig.height = 3}
+```{r ifrfdef}
 ifr_levin <- function(age_in_years) {
   scaled <- exp(-7.56 + 0.121 * age_in_years)
   scaled / (100 + scaled)
 }
+```
+
+```{r, echo=FALSE,out.width = "100%",dpi = 600,fig.width = 8,fig.height = 3}
 ggplot(data=data.frame(x=0:100,y=ifr_levin(0:100)),aes(x,y)) +
          geom_line() + theme_minimal() + 
          xlab('Age') + ylab('Infection-fatality ratio')
