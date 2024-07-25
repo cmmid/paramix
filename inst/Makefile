@@ -15,7 +15,7 @@ DATDIR ?= input
 OUTDIR ?= output
 FIGDIR ?= figure
 
-localdef: ${FIGDIR}/fig1.png
+localdef: ${FIGDIR}/incidence.png
 
 ${DATDIR} ${OUTDIR} ${FIGDIR}:
 	mkdir -p $@
@@ -46,11 +46,15 @@ ${DATDIR}/param_%.rda: R/param.R ${DATDIR}/population.rds | ${DATDIR}
 
 allparam: $(patsubst %,${DATDIR}/param_%.rda,${ALLSCN})
 
+${DATDIR}/odin.rda: R/odin.R | ${DATDIR}
+	$(call R)
+
 # output scenario results
 ${OUTDIR}/sim_%.rds: R/simulate.R ${DATDIR}/population.rds ${DATDIR}/param_%.rda | ${OUTDIR}
 	$(call R,$(firstword $(subst _, ,$*)))
 
-allsim: $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
+ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
+allsim: ${ALLSIM}
 
 # output distilled results - use paramix::alembic/distill
 ${OUTDIR}/distill_%.rds: R/distill.R ${DATDIR}/population.rds ${DATDIR}/param_%.rda ${OUTDIR}/sim_%.rds
@@ -67,6 +71,14 @@ allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 ${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 	$(call R)
 
+UTIL := ${FIGDIR}/fig_utilities.rda
+
+${UTIL}: R/fig_utilities.R
+	$(call R)
+
 # TODO what figs?
 ${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
+	$(call R)
+
+${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${ALLSIM} | ${FIGDIR}
 	$(call R)
