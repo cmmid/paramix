@@ -32,24 +32,27 @@ $(foreach pop,${POPSCN},$(foreach ifr,${IFRSCN},$(call $(eval ALLSCN += ${pop}_$
 	Rscript $^
 	touch $@
 
-# input population data
+# inputs: population data, life expectancy tables, IFR curves,
+# other natural history data, and model definition
 ${DATDIR}/population.rds: R/population.R | .setup ${DATDIR}
 	$(call R)
 
-# input life expectancy tables
 ${DATDIR}/lex.rds: R/lex.R | .setup ${DATDIR}
 	$(call R)
 
-# input scenario data - use paramix::blend to create these
-${DATDIR}/param_%.rda: R/param.R ${DATDIR}/population.rds | ${DATDIR}
-	$(call R,$(subst _, ,$*))
+${DATDIR}/disease_pars.rda: R/disease_pars.R ${DATDIR}/population.rds
+	$(call R)
 
-allparam: $(patsubst %,${DATDIR}/param_%.rda,${ALLSCN})
+${DATDIR}/param_%.rda: R/param.R ${DATDIR}/population.rds ${DATDIR}/disease_pars.rda | ${DATDIR}
+	$(call R,$(subst _, ,$*))
 
 ${DATDIR}/odin.rda: R/odin.R | ${DATDIR}
 	$(call R)
 
-# output scenario results
+allinputs: $(patsubst %,${DATDIR}/param_%.rda,${ALLSCN}) ${DATDIR}/odin.rda \
+${DATDIR}/disease_pars.rda ${DATDIR}/lex.rds ${DATDIR}/population.rds
+
+# outputs: simulation time series + distillations
 ${OUTDIR}/sim_%.rds: R/simulate.R ${DATDIR}/population.rds ${DATDIR}/param_%.rda | ${OUTDIR}
 	$(call R,$(firstword $(subst _, ,$*)))
 
