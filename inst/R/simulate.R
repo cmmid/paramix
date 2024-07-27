@@ -65,6 +65,10 @@ sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
 }) |> rbindlist(idcol = "intervention")
 
 sim_dt[, model_from := model_agelimits[age_group]]
-sim_dt[ifr_params, on = .(model_from), deaths := value*i.value]
+ifr_params <- ifr_params[method != "f_val", .(model_from, method, value) ] |> unique()
 
-sim_dt |> saveRDS(tail(.args, 1))
+exp_sim_dt <- ifr_params[, unique(method)] |> setNames(nm = _) |> lapply(\(m) sim_dt) |> rbindlist(idcol = "method")
+
+exp_sim_dt[ifr_params, on = .(model_from, method), deaths := value * i.value]
+
+exp_sim_dt |> saveRDS(tail(.args, 1))
