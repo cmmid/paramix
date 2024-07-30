@@ -4,10 +4,10 @@ require(paramix)
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
-  file.path("input", "param_GBR_SC2.rda"),
-  file.path("output", "sim_GBR_SC2.rds"),
+  file.path("input", "param_AFG_SC2.rda"),
+  file.path("output", "sim_AFG_SC2.rds"),
   "GBR",
-  file.path("output", "distill_GBR_SC2.rds")
+  file.path("output", "distill_AFG_SC2.rds")
 ) else commandArgs(trailingOnly = TRUE)
 
 
@@ -18,10 +18,12 @@ pop_dt <- pop_dt[
 
 load(.args[2])
 
-sim_dt <- readRDS(.args[3])[, .(sim_method = method, intervention, time, model_from, value = deaths)]
+sim_dt <- readRDS(.args[3])[, .(
+  sim_method = method, intervention, time, model_from, value = deaths
+)][, .(value = sum(value)), by = .(sim_method, intervention, model_from)]
 
 dt <- sim_dt[,{
   distill_summary(.SD, pop_dt, mapping_dt)
-}, by = .(sim_method, intervention, time)]
+}, by = .(sim_method, intervention)]
 
 dt |> saveRDS(tail(.args, 1))

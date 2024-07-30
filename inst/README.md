@@ -11,4 +11,9 @@ path/to/this/directory$ make
 ```
 
 You will be prompted by `renv` to agree to setting up the `renv` library.
-The `socialmixr` dependency tree is sprawling, so will this will take a moment.
+The `socialmixr` dependency tree is sprawling, so will this may take a moment.
+
+# DETAILS
+
+This analysis comprises stages: building up inputs, transforming them to
+outputs, and then visualizing those outputs.
