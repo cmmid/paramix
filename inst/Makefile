@@ -82,10 +82,13 @@ ${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 
 allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 
+${OUTDIR}/incidence.rds: R/incidence.R $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
+	$(call R)
+
 ${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 	$(call R)
 
-allouts: ${OUTDIR}/consolidated.rds
+allouts: ${OUTDIR}/consolidated.rds ${OUTDIR}/incidence.rds
 
 ##### FIGURES ##################################################################
 
@@ -98,7 +101,7 @@ ${UTIL}: R/fig_utilities.R | ${FIGDIR} ${RENV}
 #${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
 #	$(call R)
 
-${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${ALLSIM}
+${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
 allfigs: ${FIGDIR}/incidence.png
