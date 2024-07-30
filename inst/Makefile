@@ -26,7 +26,7 @@ RENV = .Rprofile
 
 # build renv/library & other renv infrastructure
 ${RENV}: install.R
-	$(call R)
+	 Rscript --vanilla $^
 
 clean:
 	rm -rf ${RENV}
