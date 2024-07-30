@@ -34,14 +34,12 @@ ifr_opts$FLU <- all_cause_mort
 
 disease_pars <- list(
   FLU = list(
-    infection_delays = c(0.8, 1.8), # incubation, typical duration infectious [days]
-    susc_par = 0.55,
-    transmissibility = 0.1
+    infection_delays = c(1, 7), # incubation, typical duration infectious [days]
+    transmissibility = 0.2
   ),
   SC2 = list(
     infection_delays = c(3, 5),
-    susc_par = 0.3,
-    transmissibility = 0.1
+    transmissibility = 0.2
   )
 )
 

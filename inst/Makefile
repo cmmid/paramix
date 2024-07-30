@@ -72,13 +72,11 @@ ${OUTDIR}/sim_%.rds: R/simulate.R $(call dat,population.rds odin.rda param_%.rda
 ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 allsim: ${ALLSIM}
 
-# output distilled results - use paramix::alembic/distill
 ${OUTDIR}/distill_%.rds: R/distill.R $(call dat,population.rds param_%.rda) ${OUTDIR}/sim_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
 alldistill: $(patsubst %,${OUTDIR}/distill_%.rds,${ALLSCN})
 
-# output computed YLLs
 ${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 

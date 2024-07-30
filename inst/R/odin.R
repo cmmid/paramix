@@ -17,14 +17,13 @@ sir_odin <- odin::odin({
   I0[] <- user() # Initial infection by age/risk group
 
   # MODEL PARAMETERS
-  susc[] <- user() # Susceptibility
   trans <- user() # Transmissibility
   gamma1 <- user() # Latent period
   gamma2 <- user() # Infectious period
   cij[,] <- user() # Contact matrix
 
   sij[,] <- cij[i,j] * I[j] / sum(pop[]) # Transmission matrix
-  lambda[] <- trans * susc[i] * sum(sij[i,]) # Force of infection
+  lambda[] <- trans * sum(sij[i,]) # Force of infection
   newInf[] <- lambda[i] * S[i] # Newly infected
   onsets[] <- gamma1 * E[i]
   removal[] <- gamma2 * I[i]
@@ -50,7 +49,6 @@ sir_odin <- odin::odin({
   dim(I0) <- no_groups
   dim(V0) <- no_groups
   dim(VE) <- no_groups
-  dim(susc) <- no_groups
   dim(lambda) <- no_groups
   dim(newInf) <- no_groups
   dim(onsets) <- no_groups
@@ -68,13 +66,12 @@ sir_odin <- odin::odin({
 
 epidemic_run <- function(
   init_infected,
-  susceptibility,
   transmissibility,
   demography_input,
   contacts,
   init_vaccinated,
   efficacy, infection_delays,
-  duration, t0 = 0, interval = 7
+  duration, t0 = 0, interval = 1
 ){
 
   # define model timings
@@ -85,7 +82,6 @@ epidemic_run <- function(
     no_groups = length(demography_input),
     cij = contacts,
     trans = transmissibility,
-    susc = susceptibility,
     pop = demography_input,
     I0 = init_infected,
     V0 = init_vaccinated,

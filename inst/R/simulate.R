@@ -26,11 +26,8 @@ epidemic_time_series <- function(
   contact_mat
 ) with(disease_pars, {
 
-  susceptibility <-  c((0.2*1 + 0.8*susc_par), rep(susc_par, 3))
-
   return(epidemic_run(
     init_infected,
-    susceptibility,
     transmissibility,
     demography_input = demog,
     contacts = contact_mat,
@@ -59,7 +56,7 @@ sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   epidemic_time_series(
     vacc_cov = vax_cov_opts[[opt]],
     demog = demog, init_infected = c(0, 0, 1000, 0),
-    length_of_epid = 280, disease_pars = sim_pars,
+    length_of_epid = 100, disease_pars = sim_pars,
     contact_mat = cmij
   )
 }) |> rbindlist(idcol = "intervention")
@@ -70,5 +67,9 @@ ifr_params <- ifr_params[method != "f_val", .(model_from, method, value) ] |> un
 exp_sim_dt <- ifr_params[, unique(method)] |> setNames(nm = _) |> lapply(\(m) sim_dt) |> rbindlist(idcol = "method")
 
 exp_sim_dt[ifr_params, on = .(model_from, method), deaths := value * i.value]
+
+capita_dt <- data.table(age_group = seq_along(demog), capita = demog)
+
+exp_sim_dt[capita_dt, on = .(age_group), capita := capita]
 
 exp_sim_dt |> saveRDS(tail(.args, 1))
