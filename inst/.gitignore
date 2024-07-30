@@ -1,7 +1,8 @@
 input/*
 output/*
 figure/*
-.setup
+
+.Rprofile
 
 renv/*
 !renv/activate.R
