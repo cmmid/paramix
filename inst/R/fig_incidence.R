@@ -1,16 +1,16 @@
 
 library(data.table)
 library(ggplot2)
+library(ggh4x)
 
 .args <- if (interactive()) c(
   file.path("figure", "fig_utilities.rda"),
-  list.files("output", "^sim_.*\\.rds$", full.names = TRUE),
+  file.path("output", "incidence.rds"),
   file.path("figure", "incidence.png")
 ) else commandArgs(trailingOnly = TRUE)
 
 load(.args[1])
-
-ts_dt <- consolidate(.args, "sim_")
+ts_dt <- readRDS(.args[2])
 
 age_lowers <- ts_dt[, unique(model_from)]
 age_uppers <- age_lowers[-1] - 1L
@@ -29,13 +29,14 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 70)]) + aes(
     x = time, y = value/capita,
     color = intervention, linetype = pathogen
   ) +
-  facet_grid(age_group ~ place, labeller = labeller(
+  facet_nested("Age Group" + age_group ~ "Setting" + place, labeller = labeller(
     age_group = age_facet_labels, place = iso_labels
   )) +
   geom_line() +
-  theme_bw() + theme(element_text(size = 16)) +
+  theme_minimal() + theme(element_text(size = 16), legend.position = "bottom") +
   scale_x_continuous(
-    "Simulation Time [weeks]", breaks = seq(0, 70, by = 7), labels = \(b) b / 7
+    "Simulation Time [weeks]", breaks = seq(0, 70, by = 7), labels = \(b) b / 7,
+    expand = expansion()
   ) +
   scale_y_continuous("Infections\n[incidence per capita]") +
   scale_color_discrete(
