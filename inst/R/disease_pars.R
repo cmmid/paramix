@@ -5,6 +5,7 @@ require(countrycode)
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
+  file.path("input", "lex.rds"),
   file.path("input", "disease_pars.rda")
 ) else commandArgs(trailingOnly = TRUE)
 
@@ -17,18 +18,14 @@ ifr_opts <- list(
 )
 
 pop_dt <- readRDS(.args[1])
+lex_dt <- readRDS(.args[2])
 
 # TODO a bit slow + repeated - move into own script?
 # for FLU, going to assume looks like all-cause mortality in an HIC setting
 ref_demo_dt <- pop_dt[iso3 == "GBR"]
-data("mx1dt")
-ref_mx_dt <- mx1dt[
-  year == 2021
-][,
-  iso3 := countrycode(country_code, "iso3n", "iso3c")
-][!is.na(iso3), .(iso3, age, mx = mxB)][
-  ref_demo_dt, on = .(iso3, age = from)
-]
+ref_mx_dt <- lex_dt[
+  iso3 == "GBR", .(iso3, age, mx)
+][ref_demo_dt, on = .(iso3, age = from)]
 
 scaling <- ref_mx_dt[, sum(ifr_opts$SC2(age)*weight)/sum(mx*weight),]
 all_cause_mort <- ref_mx_dt[, approxfun(age, scaling*mx, rule = c(1:2))]

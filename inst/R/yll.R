@@ -15,8 +15,21 @@ lex_dt <- lex_dt[
 
 distill_dt <- readRDS(.args[2])
 
+halfages <- distill_dt[, unique(partition[partition != round(partition)])]
+
+expander <- data.table(lower = floor(halfages), upper = ceiling(halfages))
+
+lower_dt <- lex_dt[expander, on = .(age = lower), .(index = seq_len(.N), age, ex)]
+upper_dt <- lex_dt[expander, on = .(age = upper), .(index = seq_len(.N), age, ex)]
+
+expand_dt <- lower_dt[
+  upper_dt, on = .(index), .(age = halfages, ex = (ex + i.ex)/2)
+]
+
+ex_dt <- rbind(lex_dt[, .(age, ex)], expand_dt)
+
 yll_dt <- distill_dt[
-  lex_dt, on = .(partition = age)
-][, .(YLL = sum(value*ex)), keyby = .(method, intervention)]
+  ex_dt, on = .(partition = age)
+][, .(YLL = sum(value*ex)), keyby = .(sim_method, method, intervention)]
 
 yll_dt |> saveRDS(tail(.args, 1))

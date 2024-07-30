@@ -18,10 +18,10 @@ pop_dt <- pop_dt[
 
 load(.args[2])
 
-sim_dt <- readRDS(.args[3]) |> setnames(c("age_group", "deaths"), c("model_from", "value"))
+sim_dt <- readRDS(.args[3])[, .(sim_method = method, intervention, time, model_from, value = deaths)]
 
 dt <- sim_dt[,{
   distill_summary(.SD, pop_dt, mapping_dt)
-}, by = intervention]
+}, by = .(sim_method, intervention, time)]
 
 dt |> saveRDS(tail(.args, 1))
