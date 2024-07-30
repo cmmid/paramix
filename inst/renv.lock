@@ -487,15 +487,6 @@
       ],
       "Hash": "2bcca3848e4734eb3b16103bc9aa4b8e"
     },
-    "paramix": {
-      "Package": "paramix",
-      "Version": "0.0.0.9000",
-      "Source": "unknown",
-      "Requirements": [
-        "data.table"
-      ],
-      "Hash": "90d7b624a67e0e0641e597421e331984"
-    },
     "patchwork": {
       "Package": "patchwork",
       "Version": "1.2.0",
