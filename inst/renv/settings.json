@@ -1,7 +1,6 @@
 {
   "bioconductor.version": null,
   "external.libraries": [],
-  "ignored.packages": ["paramix"],
   "package.dependency.fields": [
     "Imports",
     "Depends",
