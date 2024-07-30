@@ -1,10 +1,10 @@
 
-# first rule is default target when invoking `make` w/o target
-# redirects to another pseudo-rule below to avoid any rule
-# definitions in local.makefile
+###### DEFAULT TARGET: CHECK localdef ##########################################
 default: localdef
 
-# if you want to override directories e.g.
+###### SUPPORT DEFINITIONS #####################################################
+
+# if need to override directories e.g.
 -include local.makefile
 
 # convenience make definitions
@@ -15,52 +15,65 @@ DATDIR ?= input
 OUTDIR ?= output
 FIGDIR ?= figure
 
-localdef: ${FIGDIR}/incidence.png
+dat = $(addprefix ${DATDIR}/,$(1))
+
+localdef: allfigs
 
 ${DATDIR} ${OUTDIR} ${FIGDIR}:
 	mkdir -p $@
 
+RENV = .Rprofile
+
+# build renv/library & other renv infrastructure
+${RENV}: install.R
+	$(call R)
+
+clean:
+	rm -rf ${RENV}
+	rm -rf ${DATDIR}
+	rm -rf ${OUTDIR}
+	rm -rf ${FIGDIR}
+
+##### INPUTS ###################################################################
+# population data, life expectancy tables, IFR curves,
+# other natural history data, and model definition
+
 # scenarios: iso3c codes + shorthand for pathogens
-POPSCN := GBR AFG
-IFRSCN := SC2 FLU
+POPSCN ?= AFG GBR
+IFRSCN ?= SC2 FLU
 
 # create all combinations of scenarios
 $(foreach pop,${POPSCN},$(foreach ifr,${IFRSCN},$(call $(eval ALLSCN += ${pop}_${ifr}))))
 
-# do some setup for the packages needed for this analysis
-.setup: install.R
-	Rscript $^
-	touch $@
-
-# inputs: population data, life expectancy tables, IFR curves,
-# other natural history data, and model definition
-${DATDIR}/population.rds: R/population.R | .setup ${DATDIR}
+${DATDIR}/population.rds: R/population.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/lex.rds: R/lex.R | .setup ${DATDIR}
+${DATDIR}/lex.rds: R/lex.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/disease_pars.rda: R/disease_pars.R ${DATDIR}/population.rds
+${DATDIR}/odin.rda: R/odin.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/param_%.rda: R/param.R ${DATDIR}/population.rds ${DATDIR}/disease_pars.rda | ${DATDIR}
+# n.b. for additional pathogens, this would need to be expanded
+${DATDIR}/disease_pars.rda: R/disease_pars.R $(call dat,population.rds lex.rds)
+	$(call R)
+
+${DATDIR}/param_%.rda: R/param.R $(call dat,population.rds disease_pars.rda)
 	$(call R,$(subst _, ,$*))
 
-${DATDIR}/odin.rda: R/odin.R | ${DATDIR}
-	$(call R)
+allinputs: $(call dat,population.rds lex.rds odin.rda disease_pars.rda $(patsubst %,param_%.rda,${ALLSCN}))
 
-allinputs: $(patsubst %,${DATDIR}/param_%.rda,${ALLSCN}) ${DATDIR}/odin.rda \
-${DATDIR}/disease_pars.rda ${DATDIR}/lex.rds ${DATDIR}/population.rds
+##### OUTPUTS ##################################################################
+# simulation time series, distillations, ylls - by various methods
 
-# outputs: simulation time series + distillations
-${OUTDIR}/sim_%.rds: R/simulate.R ${DATDIR}/population.rds ${DATDIR}/param_%.rda | ${OUTDIR}
+${OUTDIR}/sim_%.rds: R/simulate.R $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}
 	$(call R,$(firstword $(subst _, ,$*)))
 
 ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 allsim: ${ALLSIM}
 
 # output distilled results - use paramix::alembic/distill
-${OUTDIR}/distill_%.rds: R/distill.R ${DATDIR}/population.rds ${DATDIR}/param_%.rda ${OUTDIR}/sim_%.rds
+${OUTDIR}/distill_%.rds: R/distill.R $(call dat,population.rds param_%.rda) ${OUTDIR}/sim_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
 alldistill: $(patsubst %,${OUTDIR}/distill_%.rds,${ALLSCN})
@@ -74,14 +87,20 @@ allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 ${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 	$(call R)
 
+allouts: ${OUTDIR}/consolidated.rds
+
+##### FIGURES ##################################################################
+
 UTIL := ${FIGDIR}/fig_utilities.rda
 
-${UTIL}: R/fig_utilities.R
+${UTIL}: R/fig_utilities.R | ${FIGDIR} ${RENV}
 	$(call R)
 
 # TODO what figs?
-${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
+#${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
+#	$(call R)
+
+${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${ALLSIM}
 	$(call R)
 
-${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${ALLSIM} | ${FIGDIR}
-	$(call R)
+allfigs: ${FIGDIR}/incidence.png
