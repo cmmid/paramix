@@ -9,7 +9,7 @@ require(countrycode)
 
 data("mxB1")
 life_expectancy_dt <- setDT(mxB1)[, .(
-  iso3 = countrycode(country_code, "iso3n", "iso3c"),
+  iso3 = countrycode(country_code, "iso3n", "iso3c", warn = FALSE),
   age, mx = `2021`
 )][!is.na(iso3)][,
   ax := fifelse(age == 0, 0.2, 0.5)
