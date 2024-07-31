@@ -38,19 +38,6 @@ tot_dt <- plot_dt[, .(tot = sum(unique(capita))), by = place]
 
 plot_dt <- plot_dt[tot_dt, on = .(place), cpc := cvalue / tot][time == max(time)]
 
-age_lowers <- ts_dt[, unique(model_from)]
-age_uppers <- age_lowers[-1] - 1L
-
-age_facet_labels <- paste0(age_lowers, c(paste0("-", age_uppers),"+"))
-names(age_facet_labels) <- seq_along(age_facet_labels)
-iso_labels <- c(AFG = "Afghanistan", GBR = "United Kingdom")
-
-intervention_labels <- unname(age_facet_labels)
-intervention_labels[1] <- "Nobody"
-names(intervention_labels) <- c("none", paste0("vax_", c("young", "working", "older")))
-
-pathogen_labels <- c(FLU = "Influenza", SC2 = "SARS-CoV-2")
-
 focus_dt <- plot_dt[,
   .(cpc = sum(cpc)), by = .(intervention, place, pathogen, variable, method)
 ]
@@ -66,14 +53,13 @@ p <- ggplot(focus_dt[variable != "averted_inf"]) + aes(
   )) +
   geom_point(stat = "identity", position = "stack") +
   theme_bw() + theme(
-    element_text(size = 16), legend.position = "bottom",
+    element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line")
   ) +
   scale_x_discrete("Model Assumption", labels = c(f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix")) +
   scale_y_continuous("Cumulative Averted\n[incidence per capita]") +
-  scale_color_discrete(
-    "Vaccinate ...", labels = intervention_labels,
-    breaks = names(intervention_labels)
+  scale_color_intervention(
+    breaks = rev(names(intervention_labels)) # order by ranking
   )
 
 ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
