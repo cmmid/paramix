@@ -110,4 +110,7 @@ ${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 ${FIGDIR}/averted.png: R/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-allfigs: $(call fig,incidence averted)
+${FIGDIR}/yll.png: R/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
+	$(call R)
+
+allfigs: $(call fig,incidence averted yll)
