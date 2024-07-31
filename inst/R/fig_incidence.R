@@ -33,7 +33,10 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 70)]) + aes(
     age_group = age_facet_labels, place = iso_labels
   )) +
   geom_line() +
-  theme_minimal() + theme(element_text(size = 16), legend.position = "bottom") +
+  theme_minimal() + theme(
+    element_text(size = 16), legend.position = "bottom",
+    panel.spacing.x = unit(1.5, "line")
+  ) +
   scale_x_continuous(
     "Simulation Time [weeks]", breaks = seq(0, 70, by = 7), labels = \(b) b / 7,
     expand = expansion()
