@@ -147,6 +147,9 @@ trap <- function(.target) {
 
   pathogen_labels <- c(FLU = "Influenza", SC2 = "SARS-CoV-2")
 
+  model_assumption_labels <- c(f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix")
+  distill_assumption_labels <- c(mean_partition = "@ Mean Age", uniform_model = "Uniform Across Partition", alembic_weighted = "paramix", proportional_density = "Prop. to Pop. Density")
+
   scale_color_intervention <- rejig(
     scale_color_manual, name = "Vaccinate...",
     breaks = names(intervention_labels), labels = intervention_labels,

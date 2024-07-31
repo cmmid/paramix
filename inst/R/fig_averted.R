@@ -56,7 +56,7 @@ p <- ggplot(focus_dt[variable != "averted_inf"]) + aes(
     element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line")
   ) +
-  scale_x_discrete("Model Assumption", labels = c(f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix")) +
+  scale_x_discrete("Model Assumption", labels = model_assumption_labels) +
   scale_y_continuous("Cumulative Averted\n[incidence per capita]") +
   scale_color_intervention(
     breaks = rev(names(intervention_labels)) # order by ranking

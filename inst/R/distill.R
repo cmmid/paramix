@@ -26,4 +26,6 @@ dt <- sim_dt[,{
   distill_summary(.SD, pop_dt, mapping_dt)
 }, by = .(sim_method, intervention)]
 
+dt[, capita := pop_dt[, sum(weight*1000)] ]
+
 dt |> saveRDS(tail(.args, 1))

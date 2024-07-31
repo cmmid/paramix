@@ -30,6 +30,6 @@ ex_dt <- rbind(lex_dt[, .(age, ex)], expand_dt)
 
 yll_dt <- distill_dt[
   ex_dt, on = .(partition = age)
-][, .(YLL = sum(value*ex)), keyby = .(sim_method, method, intervention)]
+][, .(YLL = sum(value*ex)), keyby = .(sim_method, method, intervention, capita)]
 
 yll_dt |> saveRDS(tail(.args, 1))
