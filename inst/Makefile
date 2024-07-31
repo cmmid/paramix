@@ -15,7 +15,10 @@ DATDIR ?= input
 OUTDIR ?= output
 FIGDIR ?= figure
 
+FIGEXT ?= png
+
 dat = $(addprefix ${DATDIR}/,$(1))
+fig = $(addprefix ${FIGDIR}/,$(patsubst %,%.${FIGEXT},$(1)))
 
 localdef: allfigs
 
@@ -104,4 +107,7 @@ ${UTIL}: R/fig_utilities.R | ${FIGDIR} ${RENV}
 ${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-allfigs: ${FIGDIR}/incidence.png
+${FIGDIR}/averted.png: R/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
+	$(call R)
+
+allfigs: $(call fig,incidence averted)
