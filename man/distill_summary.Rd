@@ -2,16 +2,43 @@
 % Please edit documentation in R/plotting.R
 \name{distill_summary}
 \alias{distill_summary}
-\title{Convenient Distillation Comparison Summary}
+\title{Distillation Calculation Comparison Summary}
 \usage{
-distill_summary(model_outcomes_dt, density_dt, mapping_dt)
+distill_summary(model_outcomes_dt, alembic_dt)
 }
 \arguments{
-\item{model_outcomes_dt}{a data.table (or convertable to such) with columns
-\code{from} and \code{value}}
+\item{model_outcomes_dt}{a \code{data.table} (or convertable to such) with columns
+\code{model_from} and \code{value}}
 
 \item{model_upper}{the upper limit of the last partition}
 }
 \description{
-Calculates the outcomes for various distillation assumptions.
+Implements several approaches to imputing higher resolution outcomes, then
+tables them up for convenient plotting.
+}
+\examples{
+library(data.table)
+f_param <- function(age_in_years) {
+  scaled <- exp(-7.56 + 0.121 * age_in_years)
+  scaled / (100 + scaled)
+}
+
+model_partition <- c(0, 5, 20, 65, 101)
+density_dt <- data.table(
+  from = 0:100, weight = c(rep(1, 66), exp(-0.075 * 1:35))
+)
+alembic_dt <- alembic(
+  f_param, density_dt, model_partition, seq(0, 101, by = 1L)
+)
+
+# for simplicity, assume a uniform force-of-infection across ages =>
+# infections proportion to population density.
+model_outcomes_dt <- density_dt[, .(value = sum(f_param(from) * weight)),
+  by = .(model_from = model_partition[findInterval(from, model_partition)])
+]
+
+ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
+
+
+
 }
