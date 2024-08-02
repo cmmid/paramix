@@ -1,6 +1,6 @@
 Package: paramix
 Title: Age-Based Aggregation and Disaggregation for Analysis of Compartmental Models
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: 
     c(person("Carl", "Pearson", , "carl.ab.pearson@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-0701-7860")),

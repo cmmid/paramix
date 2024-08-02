@@ -45,7 +45,9 @@ lines(
   type = "s", col = "firebrick"
 )
 # properly aggregated, but not accounting for age distribution
-bad_alembic_dt <- alembic(ifr_levin, within(age_pyramid, weight <- 1), age_limits, 0:100)
+bad_alembic_dt <- alembic(
+  ifr_levin, within(age_pyramid, weight <- 1), age_limits, 0:100
+)
 ifr_unif <- blend(bad_alembic_dt)
 lines(
   age_limits, c(ifr_unif$value, tail(ifr_unif$value, 1)),

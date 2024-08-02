@@ -7,7 +7,7 @@
 distill(outcomes, alembic_dt)
 }
 \arguments{
-\item{outcomes}{a long-format \code{data.frame} with columns \code{model_part} and
+\item{outcomes}{a long-format \code{data.frame} with columns \code{model_from} and
 \code{value}, optionally others that will be preserved}
 
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
