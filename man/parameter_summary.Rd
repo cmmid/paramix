@@ -2,7 +2,7 @@
 % Please edit documentation in R/plotting.R
 \name{parameter_summary}
 \alias{parameter_summary}
-\title{Convenient Parameter Comparison Summary}
+\title{Parameter Calculation Comparison Summary}
 \usage{
 parameter_summary(
   f_param,
@@ -14,8 +14,64 @@ parameter_summary(
 }
 \arguments{
 \item{resolution}{the number of points to calculate for the underlying
-\code{f_param} line}
+\code{f_param} function.}
+}
+\value{
+a \code{data.table}, columns:
+\itemize{
+\item \code{model_category}, a integer corresponding to which of the intervals of
+\code{model_partition} the \code{x} value is in
+\item \code{x}, a numeric series from the first to last elements of \code{model_partition}
+with length \code{resolution}
+\item \code{method}, a factor with levels:
+\itemize{
+\item \code{f_val}: \code{f_param(x)}
+\item \code{f_mid}: \code{f_param(x_mid)}, where \code{x_mid} is the midpoint x of the
+\code{model_category}
+\item \code{f_mean}: \code{f_param(weighted.mean(x, w))}, where \code{w} defined by
+\code{densities} and \code{model_category}
+\item \code{mean_f}: \code{weighted.mean(f_param(x), w)}, same as previous
+\item \code{wm_f}: the result as if having used \code{paramix::blend()}; this should be
+very similar to \code{mean_f}, though will be slightly different since \code{blend}
+uses \code{integrate()}
+}
+}
 }
 \description{
-Convenient Parameter Comparison Summary
+Implements several approaches to computing partition-aggregated parameters,
+then tables them up for convenient plotting.
+}
+\examples{
+# from Levin et al 2020 https://doi.org/10.1007/s10654-020-00698-1
+f_param <- function(age_in_years) {
+  scaled <- exp(-7.56 + 0.121 * age_in_years)
+  scaled / (100 + scaled)
+}
+
+densities <- data.frame(
+  from = 0:100,
+  weight = c(rep(1, 66), exp(-0.075 * 1:35))
+)
+
+model_partition <- c(0, 5, 20, 65, 101)
+
+ps_dt <- parameter_summary(f_param, densities, model_partition)
+ps_dt
+
+\dontshow{if (require(ggplot2)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+ggplot(ps_dt) + aes(x, y = value, color = method) +
+  geom_line(data = \(dt) subset(dt, method == "f_val")) +
+  geom_step(data = \(dt) subset(dt, method != "f_val")) +
+  theme_bw() + theme(
+    legend.position = "inside", legend.position.inside = c(0.05, 0.95),
+    legend.justification = c(0, 1)
+  ) + scale_color_discrete(
+    "Method", labels = c(
+      f_val = "f(x)", f_mid = "f(mid(x))", f_mean = "f(E[x])",
+      mean_f = "discrete E[f(x)]", wm_f = "integrated E[f(x)]"
+    )
+  ) +
+  scale_x_continuous("Age", breaks = seq(0, 100, by = 10)) +
+  scale_y_log10("IFR", breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0))
+\dontshow{\}) # examplesIf}
 }
