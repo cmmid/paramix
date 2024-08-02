@@ -5,7 +5,6 @@
 #' Implements several approaches to computing partition-aggregated parameters,
 #' then tables them up for convenient plotting.
 #'
-#'
 #' @inheritParams blend
 #'
 #' @param resolution the number of points to calculate for the underlying
@@ -102,69 +101,76 @@ parameter_summary <- function(
 
 }
 
-#' @title Convenient Distillation Comparison Summary
+#' @title Distillation Calculation Comparison Summary
 #'
 #' @description
-#' Calculates the outcomes for various distillation assumptions.
+#' Implements several approaches to imputing higher resolution outcomes, then
+#' tables them up for convenient plotting.
 #'
-#' @param model_outcomes_dt a data.table (or convertable to such) with columns
-#' `from` and `value`
+#' @param model_outcomes_dt a `data.table` (or convertable to such) with columns
+#' `model_from` and `value`
 #'
 #' @param model_upper the upper limit of the last partition
 #'
+#' @examples
+#' library(data.table)
+#' f_param <- function(age_in_years) {
+#'   scaled <- exp(-7.56 + 0.121 * age_in_years)
+#'   scaled / (100 + scaled)
+#' }
 #'
+#' model_partition <- c(0, 5, 20, 65, 101)
+#' density_dt <- data.table(
+#'   from = 0:100, weight = c(rep(1, 66), exp(-0.075 * 1:35))
+#' )
+#' alembic_dt <- alembic(
+#'   f_param, density_dt, model_partition, seq(0, 101, by = 1L)
+#' )
+#'
+#' # for simplicity, assume a uniform force-of-infection across ages =>
+#' # infections proportion to population density.
+#' model_outcomes_dt <- density_dt[, .(value = sum(f_param(from) * weight)),
+#'   by = .(model_from = model_partition[findInterval(from, model_partition)])
+#' ]
+#'
+#' ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
+#'
+#'
+#'
+#' @importFrom data.table setDT
 #' @export
 distill_summary <- function(
   model_outcomes_dt,
-  density_dt,
-  mapping_dt
+  alembic_dt
 ) {
   setDT(model_outcomes_dt)
-  model_partitions <- c(
-    model_outcomes_dt[, unique(model_from)],
-    mapping_dt[, max(new_from)]
-  )
-
-  density_dt <- density_dt[, {
-    new_from <- mapping_dt$new_from[
-      findInterval(from, mapping_dt$new_from, rightmost.closed = FALSE)
-    ]
-    .(new_from, weight)
-  }][, .(weight = sum(weight)), by = new_from]
+  distilled_dt <- alembic_dt[model_outcomes_dt, on = .(model_from)]
+  distilled_dt[, weigh_at := new_from + c(diff(new_from)/2, 0) ]
 
   return(rbind(
-    # approach 1: all outcomes at mean age
-    model_outcomes_dt[order(model_from), .(
-      partition = (head(model_partitions, -1) + tail(model_partitions, -1)) / 2,
-      value, method = "mean_partition"
-    )],
+    # approach 1: all outcomes at mean value
+    distilled_dt[, .(
+        partition = weighted.mean(weigh_at, density),
+        value = value[1], method = "f_mean"
+      ), by = model_from
+    ][, .SD, .SDcols = -c("model_from")],
 
     # approach 2: outcomes spread uniformly within group
-    model_outcomes_dt[
-      mapping_dt, on = .(model_from), allow.cartesian = TRUE
-    ][, {
-      parts <- new_from
-      .(partition = parts, value = value / length(parts))
-    }, by = model_from][, .(
-      partition, value, method = "uniform_model")
-    ],
+    distilled_dt[, .(
+      partition = new_from, value = value/.N, method = "f_mid"
+    ), by = model_from][, .SD, .SDcols = -c("model_from")],
 
     # TODO need to aggregate density_dt to new_from
 
     # approach 3: proportionally to age distribution within the group
-    density_dt[
-      mapping_dt, on = .(new_from)
-    ][
-      model_outcomes_dt, on = .(model_from)
-    ][, .(
-        partition = new_from, value = value * weight / sum(weight)
-      ),
-      by = .(model_from)
-    ][, .(partition, value, method = "proportional_density")],
+    distilled_dt[, .(
+      partition = new_from, value = value * density / sum(density),
+      method = "mean_f"
+    ), by = model_from][, .SD, .SDcols = -c("model_from")],
 
     # approach 4: proportionally to age *and* relative mortality rates
     setnames(
-      distill(model_outcomes_dt, mapping_dt)[, method := "alembic_weighted"],
+      distill(model_outcomes_dt, alembic_dt)[, method := "wm_f"],
       "new_from", "partition"
     )
   ))
