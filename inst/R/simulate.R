@@ -56,7 +56,7 @@ sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   epidemic_time_series(
     vacc_cov = vax_cov_opts[[opt]],
     demog = demog, init_infected = c(0, 0, 1000, 0),
-    length_of_epid = 100, disease_pars = sim_pars,
+    length_of_epid = 20*7, disease_pars = sim_pars,
     contact_mat = cmij
   )
 }) |> rbindlist(idcol = "intervention")

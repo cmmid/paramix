@@ -22,13 +22,12 @@ int_dt <- ylls_dt[intervention != "none"][
 
 int_dt[, averted_yll := i.YLL - YLL]
 
-int_dt[, sim_method := factor(sim_method, levels = c("wm_f", "f_mean", "mean_f"), ordered = TRUE)]
-int_dt[, method := factor(method, levels = c("mean_partition", "uniform_model", "alembic_weighted", "proportional_density"), ordered = TRUE)]
-
+int_dt[, sim_method := factor(sim_method, levels = names(model_assumption_labels), ordered = TRUE)]
+int_dt[, method := factor(method, levels = names(model_assumption_labels), ordered = TRUE)]
 
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
-p <- ggplot(int_dt) + aes(
+p <- ggplot(int_dt[sim_method == method]) + aes(
   x = method, group = sim_method,
   y = averted_yll/capita, color = intervention, shape = sim_method
 ) +
