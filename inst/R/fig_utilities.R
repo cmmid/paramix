@@ -138,22 +138,37 @@ trap <- function(.target) {
 
   age_group_labels <- from_labels |> setNames(1:4)
 
-  iso_labels <- c(AFG = "Afghanistan", GBR = "United Kingdom")
+  iso_labels <- c(AFG = "LMIC-like", GBR = "HIC-like")
 
-  intervention_labels <- from_labels |> setNames(c("none", paste0("vax_", c("young", "working", "older"))))
+  intervention_labels <- from_labels |>
+    setNames(c("none", paste0("vax_", c("young", "working", "older"))))
   intervention_labels[1] <- "Nobody"
   # selected using colorbrewer2.org: https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=5
-  intervention_cols <- c("#0868ac", "#43a2ca", "#7bccc4", "#bae4bc") |> setNames(names(intervention_labels))
+  intervention_cols <- c("#0868ac", "#43a2ca", "#7bccc4", "#bae4bc") |>
+    setNames(names(intervention_labels))
 
-  pathogen_labels <- c(FLU = "Influenza", SC2 = "SARS-CoV-2")
+  pathogen_labels <- c(FLU = "Flu-like", SC2 = "COVID-like")
 
-  model_assumption_labels <- c(f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix")
-  distill_assumption_labels <- c(mean_partition = "@ Mean Age", uniform_model = "Uniform Across Partition", alembic_weighted = "paramix", proportional_density = "Prop. to Pop. Density")
+  model_assumption_labels <- c(
+    f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix"
+  )
+
+  distill_assumption_labels <- c(
+    "Uniform Across Partition", "@ Mean Age",
+    "Prop. to Pop. Density", "paramix"
+  ) |> setNames(names(model_assumption_labels))
 
   scale_color_intervention <- rejig(
     scale_color_manual, name = "Vaccinate...",
     breaks = names(intervention_labels), labels = intervention_labels,
-    values = intervention_cols
+    values = intervention_cols,
+    aesthetics = c("color", "fill")
+  )
+
+  scale_x_simtime <- rejig(
+    scale_x_continuous, name = "Simulation Time [weeks]",
+    breaks = seq(0, 70, by = 7), labels = \(b) b / 7,
+    expand = expansion()
   )
 
   save(list = ls(all.names = FALSE), file = .target)

@@ -14,7 +14,7 @@ ts_dt <- readRDS(.args[2])
 
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
-p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 70)]) + aes(
+p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 15*7)]) + aes(
     x = time, y = value/capita,
     color = intervention, linetype = pathogen
   ) +
@@ -26,10 +26,7 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 70)]) + aes(
     element_text(size = 16), legend.position = "bottom",
     panel.spacing.x = unit(1.5, "line")
   ) +
-  scale_x_continuous(
-    "Simulation Time [weeks]", breaks = seq(0, 70, by = 7), labels = \(b) b / 7,
-    expand = expansion()
-  ) +
+  scale_x_simtime() +
   scale_y_continuous("Infections\n[incidence per capita]") +
   scale_color_intervention() +
   scale_linetype_discrete("Pathogen", labels = pathogen_labels)

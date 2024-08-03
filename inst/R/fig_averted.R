@@ -12,52 +12,35 @@ library(ggh4x)
 load(.args[1])
 ts_dt <- readRDS(.args[2])
 
+joinvars <- c("method", "place", "pathogen")
+
 base_dt <- ts_dt[
   intervention == "none", .SD, .SDcols = -c("intervention", "capita")
-]
-joinvars <- c("method", "age_group", "time", "model_from", "place", "pathogen")
+][,.(deaths = sum(deaths)), by = c(joinvars)]
 
-int_dt <- ts_dt[intervention != "none"][
+int_dt <- ts_dt[intervention != "none", .(
+  deaths = sum(deaths), capita = sum(unique(capita))
+), by = c(joinvars, "intervention")][
   base_dt, on = c(joinvars)
 ]
 
-int_dt[, averted_inf := i.value - value][, averted_death := i.deaths - deaths]
-
-plot_dt <- melt.data.table(
-  int_dt, id.vars = c("intervention", "capita", joinvars), measure.vars = c("averted_inf", "averted_death")
-)[variable == "averted_death" | method == "f_mean"]
-
-plot_dt[variable == "averted_inf", method := NA]
-
-plot_dt[
-  order(time), cvalue:= cumsum(value),
-  by = c(setdiff(joinvars, "time"), "variable")
-]
-
-tot_dt <- plot_dt[, .(tot = sum(unique(capita))), by = place]
-
-plot_dt <- plot_dt[tot_dt, on = .(place), cpc := cvalue / tot][time == max(time)]
-
-focus_dt <- plot_dt[,
-  .(cpc = sum(cpc)), by = .(intervention, place, pathogen, variable, method)
-]
+int_dt[, averted_death := i.deaths - deaths]
 
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
-p <- ggplot(focus_dt[variable != "averted_inf"]) + aes(
-  x = method, y = cpc, color = intervention,
-  group = method
+p <- ggplot(int_dt) + aes(
+  x = method, y = averted_death/capita, fill = intervention
 ) +
   facet_nested(place ~ pathogen, scale = "free_y", labeller = labeller(
     pathogen = pathogen_labels, place = iso_labels
   )) +
-  geom_point(stat = "identity", position = "stack") +
+  geom_bar(stat = "identity", position = "dodge") +
   theme_bw() + theme(
     element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line")
   ) +
   scale_x_discrete("Model Assumption", labels = model_assumption_labels) +
-  scale_y_continuous("Cumulative Averted\n[incidence per capita]") +
+  scale_y_continuous("Deaths Averted\n[incidence per capita]") +
   scale_color_intervention(
     breaks = rev(names(intervention_labels)) # order by ranking
   )
