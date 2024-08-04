@@ -85,6 +85,9 @@ ${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 
 allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 
+# ${OUTDIR}/vaxthreshold_%.rds: $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
+#	$(call R,$(firstword $(subst _, ,$*)))
+
 ${OUTDIR}/incidence.rds: R/incidence.R $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 	$(call R)
 
@@ -104,6 +107,10 @@ ${UTIL}: R/fig_utilities.R | ${FIGDIR} ${RENV}
 #${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
 #	$(call R)
 
+${FIGDIR}/summary.png: R/fig_fullsummary.R ${UTIL} \
+$(call dat,population.rds lex.rds disease_pars.rda) ${OUTDIR}/incidence.rds
+	$(call R)
+
 ${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
@@ -113,4 +120,4 @@ ${FIGDIR}/averted.png: R/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
 ${FIGDIR}/yll.png: R/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
 	$(call R)
 
-allfigs: $(call fig,incidence averted yll)
+allfigs: $(call fig,incidence averted yll summary)
