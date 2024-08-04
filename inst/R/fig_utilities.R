@@ -167,8 +167,18 @@ trap <- function(.target) {
 
   scale_x_simtime <- rejig(
     scale_x_continuous, name = "Simulation Time [weeks]",
-    breaks = seq(0, 70, by = 7), labels = \(b) b / 7,
+    breaks = \(lims) seq(0, lims[2], by = 7), labels = \(b) b / 7,
     expand = expansion()
+  )
+
+  scale_linetype_pathogen <- rejig(
+    scale_linetype_discrete,
+    name = "Pathogen", labels = pathogen_labels
+  )
+
+  facet_iso <- rejig(
+    facet_grid, cols = vars(iso3),
+    labeller = ggplot2::labeller(iso3 = iso_labels)
   )
 
   save(list = ls(all.names = FALSE), file = .target)

@@ -1,62 +1,97 @@
 
 require(data.table)
+require(paramix)
 require(ggplot2)
 require(patchwork)
 
 .args <- if (interactive()) c(
   file.path("figure", "fig_utilities.rda"),
   file.path("input", "population.rds"),
-  list.files("input", "^param_.*\\.rda", full.names = TRUE),
+  file.path("input", "lex.rds"),
+  file.path("input", "disease_pars.rda"),
   file.path("output", "incidence.rds"),
   file.path("figure", "full_summary.png")
 ) else commandArgs(trailingOnly = TRUE)
 
 load(.args[1])
+load(.args[4])
+inc_dt <- readRDS(.args[5])
 
-isoset <- .args[-1] |> grep("^.*param_.*\\.rda", x = _, value = TRUE) |>
-  gsub("^.+_(.+)_.+\\.rda$", "\\1", x = _) |> unique()
+model_partition <- c(inc_dt[, unique(model_from)], 101)
 
-pop_dt <- readRDS(.args[2])[iso3 %in% isoset]
-
-pop_p <- ggplot(pop_dt) + aes(x = from, y = weight) +
-  facet_grid(. ~ iso3) +
-  geom_bar(stat = 'identity', fill = 'lightsalmon', width = 1) +
-  theme_minimal() + xlab('Age [years]') + ylab('Population [1Ks]')
-
-inc_dt <- readRDS(tail(.args, 2)[1])[
-  method == "f_mean"
-][,
-  .(value = sum(value), capita = sum(capita)),
-  by = .(place, pathogen, intervention, time)
+inc_dt <- inc_dt[method == "f_mean"][,
+  .(value = sum(value), capita = sum(unique(capita))),
+  by = .(iso3 = place, pathogen, intervention, time)
 ]
 
-inc_p <- ggplot(inc_dt[between(time, 0, 70)]) + aes(
+isoset <- inc_dt[, unique(iso3)]
+
+pop_dt <- readRDS(.args[2])[iso3 %in% isoset]
+lex_dt <- readRDS(.args[3])[iso3 %in% isoset]
+
+pop_p <- ggplot(pop_dt) + aes(x = from, y = weight) +
+  facet_iso() +
+  geom_bar(stat = "identity", fill = "lightsalmon", width = 1) +
+  theme_minimal() + theme(
+    axis.title.x = element_blank(), axis.text.x = element_blank(),
+    panel.spacing.x = unit(1.5, "line")
+  ) +
+  labs(x = "Age [years]", y = "Population\n[1Ks]")
+
+lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
+  facet_iso() +
+  geom_line(color = "lightsalmon") +
+  theme_minimal() + theme(
+    strip.background = element_blank(), strip.text = element_blank(),
+    panel.spacing.x = unit(1.5, "line")
+  ) +
+  labs(x = "Age [years]", y = "Expected Remaining Life\n[years]")
+
+inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
   x = time, y = value/capita, color = intervention, linetype = pathogen
-) + facet_grid(. ~ place) + geom_line() +
-  theme_minimal() + scale_x_simtime()
+) + facet_iso() +
+  geom_line() +
+  scale_y_continuous("Infections\n[incidence per capita]") +
+  scale_color_intervention() +
+  scale_linetype_pathogen() +
+  scale_x_simtime() +
+  theme_minimal() + theme(
+    strip.background = element_blank(), strip.text = element_blank(),
+    panel.spacing.x = unit(1.5, "line"),
+    legend.position = "inside", legend.position.inside = c(0.5, 1),
+    legend.justification.inside = c(0.5, 1),
+    legend.direction = "horizontal"
+  )
 
-plot8 <- function(dt) {
-  inf <- ggplot(dt, aes(x=age, y=infections)) +
-    geom_bar(position='dodge', stat='identity', fill='darkorange1') +
-    theme_minimal() + xlab('') + ylab('Infections')
-  mort <- ggplot(dt, aes(x=age, y=cont_ifr)) +
-    geom_line() + theme_minimal() + xlab('') + ylab('IFR \n(log 10 scale)') +
-    scale_y_log10()
-  ifr <- ggplot(dt, aes(x=age, y=agg_ifr)) +
-    geom_line() + theme_minimal() + xlab('') + ylab('Aggregated IFR \n(log 10 scale)') +
-    scale_y_log10()
-  agg_deaths <- ggplot(dt, aes(x=age, y=agg_d)) +
-    geom_bar(position='dodge', stat='identity', fill='red2') +
-    theme_minimal() + xlab('') + ylab('Aggregated deaths')
-  as_deaths <- ggplot(dt, aes(x=age, y=deaths)) +
-    geom_bar(position='dodge', stat='identity', fill='red2') +
-    theme_minimal() + xlab('') + ylab('Deaths')
-  ex_p <- ggplot(dt, aes(x=age, y=ex)) +
-    geom_line() + theme_minimal() + xlab('Age') + ylab('Life expectancy')
-  yll_p <- ggplot(dt, aes(x=age, y=yll)) +
-    geom_bar(position='dodge', stat='identity', fill='mediumpurple4') +
-    theme_minimal() + xlab('Age') + ylab('Years-of-life lost')
+ifr_dt <- pop_dt[,
+  ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition)) |>
+    rbindlist(idcol = "pathogen"),
+  by = iso3
+]
 
-  pop + inf + mort + ifr + agg_deaths + as_deaths + ex_p + yll_p +
-    plot_layout(nrow=4)
-}
+ifr_p <- ggplot(ifr_dt) + aes(x, y = value, color = method) +
+  facet_iso(rows = vars(pathogen), labeller = labeller(
+    iso3 = iso_labels, pathogen = pathogen_labels
+  )) +
+  geom_line(data = \(dt) subset(dt, method == "f_val")) +
+  geom_step(data = \(dt) subset(dt, method != "f_val")) +
+  theme_minimal() + theme(
+    legend.position = "inside", legend.position.inside = c(0.5, 0.5),
+    legend.justification = c(0.5, 0.5), legend.direction = "horizontal"
+  ) + scale_color_discrete(
+    "Method", labels = c(
+      f_val = "f(x)", f_mid = "f(mid(x))", f_mean = "f(E[x])",
+      mean_f = "discrete E[f(x)]", wm_f = "integrated E[f(x)]"
+    )
+  ) +
+  scale_x_continuous("Age", breaks = seq(0, 100, by = 10)) +
+  scale_y_log10("IFR", breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0))
+
+
+summary_p <- pop_p + lex_p + ifr_p + inc_p + plot_layout(
+  ncol = 1, heights = c(1, 1, 2, 1)
+)
+
+ggsave(
+  tail(.args, 1), summary_p, height = 11, width = 8, units = "in", bg = "white"
+)

@@ -29,6 +29,6 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 15*7)]) + aes(
   scale_x_simtime() +
   scale_y_continuous("Infections\n[incidence per capita]") +
   scale_color_intervention() +
-  scale_linetype_discrete("Pathogen", labels = pathogen_labels)
+  scale_linetype_pathogen()
 
 ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
