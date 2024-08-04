@@ -145,7 +145,7 @@ distill_summary <- function(
 ) {
   setDT(model_outcomes_dt)
   distilled_dt <- alembic_dt[model_outcomes_dt, on = .(model_from)]
-  distilled_dt[, weigh_at := new_from + c(diff(new_from)/2, 0) ]
+  distilled_dt[, weigh_at := new_from + c(diff(new_from) / 2, 0)]
 
   return(rbind(
     # approach 1: all outcomes at mean value
@@ -157,7 +157,7 @@ distill_summary <- function(
 
     # approach 2: outcomes spread uniformly within group
     distilled_dt[, .(
-      partition = new_from, value = value/.N, method = "f_mid"
+      partition = new_from, value = value / .N, method = "f_mid"
     ), by = model_from][, .SD, .SDcols = -c("model_from")],
 
     # TODO need to aggregate density_dt to new_from

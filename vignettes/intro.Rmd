@@ -44,10 +44,12 @@ ifr_levin <- function(age_in_years) {
 }
 ```
 
-```{r, echo=FALSE,out.width = "100%",dpi = 600,fig.width = 8,fig.height = 3}
-ggplot(data=data.frame(x=0:100,y=ifr_levin(0:100)),aes(x,y)) +
-         geom_line() + theme_minimal() + 
-         xlab('Age') + ylab('Infection-fatality ratio')
+```{r, echo=FALSE, out.width = "100%", dpi = 600, fig.width = 8, fig.height = 3}
+ggplot(
+  data.frame(x = 0:100, y = ifr_levin(0:100))
+) + aes(x, y) +
+  geom_line() + theme_minimal() +
+  labs(x = "Age", y = "Infection-fatality ratio")
 ```
 
 One typical measurement of public health outcomes is "years life lost" (YLLs). Based on age-specific mortality data, we can estimate how many years individuals at various ages can expect to live. People who die of a modeled illness lose a corresponding number of years of life, depending on their age at death. 
@@ -295,9 +297,6 @@ yll_dt <- distill_methods_dt[
 
 yllord <- yll_dt[name == "Afghanistan", method[order(YLL)]]
 
-yll_dt[, method := factor(method, levels = yllord, ordered = TRUE)]
-yll_dt$method <- factor(yll_dt$method, levels=c('alembic_weighted','mean_partition','uniform_model','proportional_density'))
-
 ggplot(yll_dt) + aes(x = name, y = YLL / 1e4, fill = method) +
   geom_bar(position = "dodge", stat = "identity") +
   theme_minimal() +
@@ -305,16 +304,17 @@ ggplot(yll_dt) + aes(x = name, y = YLL / 1e4, fill = method) +
     legend.position = "inside", legend.position.inside = c(0.1, 0.9),
     legend.justification.inside = c(0, 1), text = element_text(size = 8)
   ) +
-  scale_fill_brewer("Method", palette = 'Set1', labels = function(b) {
+  scale_fill_brewer("Method", palette = "Set1", labels = function(b) {
     c(
       mean_partition = "Deaths at mean age",
       uniform_model = "Deaths uniform across age group",
       alembic_weighted = "paramix approach",
       proportional_density = "Deaths proportional to age distribution"
     )[as.character(b)]
-  }) + 
-  ylab('YLLs per one million infections\n(10,000 person-years)') +
-  xlab('Country')
+  }) + labs(
+    x = "Country",
+    y = "YLLs per one million infections\n(10,000 person-years)"
+  )
 ```
 
 # Summary
