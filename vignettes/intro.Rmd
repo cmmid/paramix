@@ -12,7 +12,10 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
-options(scipen = 100000)
+options(
+  scipen = 100000,
+  rmarkdown.html_vignette.check_title = FALSE
+)
 ```
 
 ```{r setup, echo = FALSE}
@@ -25,15 +28,15 @@ suppressPackageStartupMessages({
 })
 ```
 
-The `paramix` package provides translation of parameters for use in compartmental models. Imagine you have compartment stratifications discretising some feature -- for example, converting continuous age into age category compartments -- but processes of interest may depend on that feature. How do you get the right aggregate parameters for the compartment rates from process function? And once you get outcomes for your stratified compartments, is there anyway to impute their higher-resolution distribution?
+The `paramix` package provides translation of parameters for use in compartmental models. Imagine you have compartments discretising some feature -- for example, converting ages into age categories -- but a process thats depends on that feature -- for example, infection fatality ratio. How do you get the right aggregate parameter for each of the compartments? And once you get outcomes for your stratified compartments, is there anyway to impute their higher-resolution distribution?
 
-With `paramix`, the `blend()` function will translate from continuous parameter relationships to the correctly averaged values. In turn, the `distill()` function will impute how the gross group outcome should be distributed to finer resolution levels. These functions use mappings between low and high resolution that are created with the `alembic()` function.
+With `paramix`, you can `blend()` a parameter function into the correctly averaged values, and `distill()` outcomes to finer resolutions. These functions work via a mapping object created with `alembic()`.
 
-In this vignette, we demonstrate applying these functions from an initial functional relationship through a final analytic process. To highlight the use of the package, we prepend `paramix::` to the package functions.
+In this vignette, we demonstrate applying these functions from an initial functional relationship through a final analytic process. To call attention to the where the package fits in, we prepend `paramix::`; this is not required during actual use.
 
 ## Motivating Example
 
-The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mortality rate. In a meta-analysis, Levin et al[^1] estimates the age-specific infection-fatality ratio (IFR) for COVID-19 as:
+The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mortality. In a meta-analysis, Levin et al[^1] estimated the age-specific infection-fatality ratio (IFR) for COVID-19 as:
 
 [^1]: [Assessing the age specificity of infection fatality rates for COVID-19: systematic review, meta-analysis, and public policy implications](https://doi.org/10.1007/s10654-020-00698-1)
 
@@ -52,15 +55,15 @@ ggplot(
   labs(x = "Age", y = "Infection-fatality ratio")
 ```
 
-One typical measurement of public health outcomes is "years life lost" (YLLs). Based on age-specific mortality data, we can estimate how many years individuals at various ages can expect to live. People who die of a modeled illness lose a corresponding number of years of life, depending on their age at death. 
+To evaluate the threat of an infectious disease, researchers often calculate expected "years life lost" (YLLs). Based on age-specific mortality data, we can estimate how many years individuals at various ages can expect to live. People who die of a modelled illness lose a corresponding number of years of life, depending on their age at death. 
 
 In this vignette, we will turn a continuous IFR relationship into compartmental aggregate IFR and deaths for broader age groups, back to age-specific deaths, and use these to estimate YLLs.
 
 ## Parametrizing a Compartmental Model
 
-Typically, ODE compartmental models have low-resolution stratification combining several ages for computational reasons, because of low-resolution data on other interactions like contact patterns, and to match intervention targets (e.g. children versus working age adults versus retirees).
+Typically, ODE compartmental models have low-resolution stratification combining several ages for a mix of computational reasons, data-availability on other interactions like contact patterns, and to match intervention targets (e.g. vaccinating children versus working age adults versus retirees).
 
-When mixing several ages into a single compartment, what is the properly aggregated value of parameters like the IFR? Generally, $E\left[f\left(x\right)\right] \ne f\left(E\left[x\right]\right)$, so simply using the IFR at the mean age for the compartment is not guaranteed to be correct. The average IFR over the age range is more reasonable, but that assumes a uniform distribution of individuals by age, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
+When mixing several ages into a single compartment, what is the properly aggregated value of parameters like the IFR? Generally, $E\left[f\left(x\right)\right] \ne f\left(E\left[x\right]\right)$, so using the IFR at the mean age for the compartment is not guaranteed to be correct. The average IFR over the age range is more reasonable, but that assumes a uniform distribution of individuals by age, which is not generally true. The proper average of IFR needs to be weighted by the age distribution, or:
 
 $$
 \textrm{IFR}\Big\rvert_a^b = \frac{\int_a^b \textrm{IFR}(\textrm{age})\rho(\textrm{age})d\textrm{age}}{\int_a^b \rho(\textrm{age})d\textrm{age}}
@@ -78,7 +81,7 @@ Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and 
 # our model age group cut points
 model_agelimits <- c(0, 5, 20, 65, 101)
 # get select data from World Population Prospects estimates
-data("popAge1dt")
+data("popAge1dt", package = "wpp2022")
 density_dt <- popAge1dt[
   name %like% "Afghanistan|United Kingdom" & year == 2021,
   .(name, from = age, weight = pop)
@@ -89,26 +92,29 @@ rm(popAge1dt)
 We can calculate the IFR values for each model age group, under different approaches to computing them. We'll use the package function `parameter_summary()`, which provides a convenient comparison of the parameter values for these approaches to summarisation:
 
 ```{r ifrplotsetup, cache=TRUE}
-plot_dt <- density_dt[, {
+plot_dt <- density_dt[, { # compute parameters for each country of interest
   paramix::parameter_summary(
     f_param = ifr_levin, densities = .SD, model_agelimits
   )
-}, by = name][
-  name == "Afghanistan" | method == "wm_f"
-][,
-  method := fifelse(
-    method != "wm_f", method,
-    fifelse(name == "Afghanistan", "af_wm_f", "uk_wm_f")
-  )
-][, .SD, .SDcols = -c("name")]
-# parameter_summary yields method in (f_val, f_mean, mean_f, wm_f)
-# with the exception of wm_f, these are independent of density, so we can drop
-# duplicates
+}, by = name]
+plot_dt
 ```
 
 And plotting these different blends:
 
 ```{r, ifrfig, echo = FALSE, cache = TRUE, out.width = "100%", dpi = 600, fig.width = 8, fig.height = 5}
+plot_dt <- plot_dt[
+  name == "Afghanistan" | method == "wm_f"
+][,
+  method := factor(fifelse(
+    method != "wm_f", as.character(method),
+    fifelse(name == "Afghanistan", "af_wm_f", "uk_wm_f")
+  ))
+][, .SD, .SDcols = -c("name")]
+# parameter_summary yields method in (f_val, f_mean, mean_f, wm_f)
+# with the exception of wm_f, these are independent of density, so we can drop
+# duplicates
+
 pop_p <- ggplot(density_dt) + aes(from, weight) + geom_bar(stat = "identity") +
   facet_grid(cols = vars(name)) +
   scale_x_continuous("Age", expand = expansion()) +
@@ -122,7 +128,8 @@ ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
     NULL,
     breaks = plot_dt[, value[.N], by = method][order(-V1), method],
     labels = c(
-      f_val = "f(age)", mean_f = "E[f(age)]", f_mean = "f(E[age])",
+      f_val = "f(age)", f_mid = "f(mid(Age))",
+      mean_f = "E[f(age)]", f_mean = "f(E[age])",
       af_wm_f = "AF-weighted E[f(age)]", uk_wm_f = "UK-weighted E[f(age)]"
     )
   ) +
@@ -169,7 +176,7 @@ params |> dcast(model_from ~ name)
 
 These parameters are now weighted correctly for use in a model with those age groups and underlying populations. Once you run that model, you might want to disaggregate an outcome, such as for example converting deaths into years of life lost.
 
-In this example, since the IFR increases with age, deaths occurring in a wide age group are more likely to have occurred at the older end of the age group. We can compare a few approaches for calculating the distribution of deaths, in order of increasing accuracy: we could assume that deaths occur
+In this example, since the IFR increases with age, deaths occurring in a wide age group are more likely to have occurred at the older end of the age group. We can compare a few approaches for calculating the distribution of deaths: we could assume that deaths occur
 
  - all at the middle age in the age group,
  - uniformly within the age group,
@@ -219,7 +226,6 @@ How would these translate into age-specific deaths, based on these different cal
 distill_methods_dt <- model_deaths_dt[,
   paramix::distill_summary(
     .SD[, .(model_from, value = deaths)],
-    density_dt[name == .BY],
     mapping_dt[name == .BY]
   ),
   by = name
@@ -257,7 +263,7 @@ ggplot(distill_methods_dt) + aes(x = partition, y = value, color = method) +
 When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years of life lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
 
 ```{r, figlex, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 3, dpi = 600}
-data("mxB1")
+data("mxB1", package = "wpp2022")
 life_expectancy_dt <- setDT(mxB1)[
   name %in% c("Afghanistan", "United Kingdom"),
   .(name, age, mx = `2021`)
@@ -306,10 +312,10 @@ ggplot(yll_dt) + aes(x = name, y = YLL / 1e4, fill = method) +
   ) +
   scale_fill_brewer("Method", palette = "Set1", labels = function(b) {
     c(
-      mean_partition = "Deaths at mean age",
-      uniform_model = "Deaths uniform across age group",
-      alembic_weighted = "paramix approach",
-      proportional_density = "Deaths proportional to age distribution"
+      f_mean = "Deaths at mean age",
+      f_mid = "Deaths uniform across age group",
+      wm_f = "paramix approach",
+      mean_f = "Deaths proportional to age distribution"
     )[as.character(b)]
   }) + labs(
     x = "Country",
