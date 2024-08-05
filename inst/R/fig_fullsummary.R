@@ -10,7 +10,7 @@ require(patchwork)
   file.path("input", "lex.rds"),
   file.path("input", "disease_pars.rda"),
   file.path("output", "incidence.rds"),
-  file.path("figure", "full_summary.png")
+  file.path("figure", "summary.png")
 ) else commandArgs(trailingOnly = TRUE)
 
 load(.args[1])
@@ -36,32 +36,17 @@ pop_p <- ggplot(pop_dt) + aes(x = from, y = weight) +
     axis.title.x = element_blank(), axis.text.x = element_blank(),
     panel.spacing.x = unit(1.5, "line")
   ) +
-  labs(x = "Age [years]", y = "Population\n[1Ks]")
+  labs(y = "Population\n[1Ks]")
 
 lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
   facet_iso() +
   geom_line(color = "lightsalmon") +
   theme_minimal() + theme(
     strip.background = element_blank(), strip.text = element_blank(),
+    axis.title.x = element_blank(), axis.text.x = element_blank(),
     panel.spacing.x = unit(1.5, "line")
   ) +
-  labs(x = "Age [years]", y = "Expected Remaining Life\n[years]")
-
-inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
-  x = time, y = value/capita, color = intervention, linetype = pathogen
-) + facet_iso() +
-  geom_line() +
-  scale_y_continuous("Infections\n[incidence per capita]") +
-  scale_color_intervention() +
-  scale_linetype_pathogen() +
-  scale_x_simtime() +
-  theme_minimal() + theme(
-    strip.background = element_blank(), strip.text = element_blank(),
-    panel.spacing.x = unit(1.5, "line"),
-    legend.position = "inside", legend.position.inside = c(0.5, 1),
-    legend.justification.inside = c(0.5, 1),
-    legend.direction = "horizontal"
-  )
+  labs(y = "Expected Remaining Life\n[years]")
 
 ifr_dt <- pop_dt[,
   ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition)) |>
@@ -73,19 +58,42 @@ ifr_p <- ggplot(ifr_dt) + aes(x, y = value, color = method) +
   facet_iso(rows = vars(pathogen), labeller = labeller(
     iso3 = iso_labels, pathogen = pathogen_labels
   )) +
-  geom_line(data = \(dt) subset(dt, method == "f_val")) +
+  geom_line(data = \(dt) subset(dt, method == "f_val"), linetype = "dotted") +
   geom_step(data = \(dt) subset(dt, method != "f_val")) +
   theme_minimal() + theme(
+    strip.background.x = element_blank(), strip.text.x = element_blank(),
     legend.position = "inside", legend.position.inside = c(0.5, 0.5),
-    legend.justification = c(0.5, 0.5), legend.direction = "horizontal"
+    legend.justification = c(0.5, 0.5), legend.direction = "horizontal",
+    legend.spacing = unit(0.5, "line"),
+    panel.spacing.x = unit(1.5, "line")
   ) + scale_color_discrete(
-    "Method", labels = c(
-      f_val = "f(x)", f_mid = "f(mid(x))", f_mean = "f(E[x])",
-      mean_f = "discrete E[f(x)]", wm_f = "integrated E[f(x)]"
-    )
+    "Method", labels = model_assumption_labels
   ) +
-  scale_x_continuous("Age", breaks = seq(0, 100, by = 10)) +
-  scale_y_log10("IFR", breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0))
+  scale_x_continuous("Age [years]", breaks = seq(0, 100, by = 10)) +
+  scale_y_log10(
+    "Infection Fatality Ratio",
+    breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0)
+  )
+
+inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
+  x = time, y = value/capita, color = intervention, linetype = pathogen
+) + facet_iso() +
+  geom_line() +
+  scale_y_continuous(
+    "Infections\n[incidence per capita]", limits = c(0, 0.08)
+  ) +
+  scale_color_intervention() +
+  scale_linetype_pathogen() +
+  scale_x_simtime() +
+  theme_minimal() + theme(
+    strip.background = element_blank(), strip.text = element_blank(),
+    panel.spacing.x = unit(1.5, "line"),
+    legend.position = "inside", legend.position.inside = c(0.4, 1),
+    legend.justification.inside = c(0.5, 1),
+    legend.direction = "horizontal",
+    legend.margin = margin(), legend.spacing = unit(0, "line"),
+    legend.box.margin = margin()
+  )
 
 
 summary_p <- pop_p + lex_p + ifr_p + inc_p + plot_layout(

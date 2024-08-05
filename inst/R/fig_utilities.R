@@ -150,13 +150,14 @@ trap <- function(.target) {
   pathogen_labels <- c(FLU = "Flu-like", SC2 = "COVID-like")
 
   model_assumption_labels <- c(
-    f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix"
+    f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix",
+    f_val = "IFR(age)"
   )
 
   distill_assumption_labels <- c(
     "Uniform Across Partition", "@ Mean Age",
     "Prop. to Pop. Density", "paramix"
-  ) |> setNames(names(model_assumption_labels))
+  ) |> setNames(head(names(model_assumption_labels), -1))
 
   scale_color_intervention <- rejig(
     scale_color_manual, name = "Vaccinate...",
