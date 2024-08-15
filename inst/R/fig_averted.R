@@ -29,7 +29,7 @@ int_dt[, averted_death := i.deaths - deaths]
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
 p <- ggplot(int_dt) + aes(
-  x = method, y = averted_death/capita, fill = intervention
+  x = method, y = 1000*averted_death/capita, fill = intervention
 ) +
   facet_nested(place ~ pathogen, scale = "free_y", labeller = labeller(
     pathogen = pathogen_labels, place = iso_labels
@@ -40,7 +40,7 @@ p <- ggplot(int_dt) + aes(
     panel.spacing.x = unit(1.5, "line")
   ) +
   scale_x_discrete("Model Assumption", labels = model_assumption_labels) +
-  scale_y_continuous("Deaths Averted\n[incidence per capita]") +
+  scale_y_continuous("Deaths averted (per 1000)") +
   scale_color_intervention(
     breaks = rev(names(intervention_labels)) # order by ranking
   )

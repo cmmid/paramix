@@ -36,7 +36,7 @@ pop_p <- ggplot(pop_dt) + aes(x = from, y = weight) +
     axis.title.x = element_blank(), axis.text.x = element_blank(),
     panel.spacing.x = unit(1.5, "line")
   ) +
-  labs(y = "Population\n[1Ks]")
+  labs(y = "Population\n(thousands)")
 
 lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
   facet_iso() +
@@ -46,7 +46,7 @@ lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
     axis.title.x = element_blank(), axis.text.x = element_blank(),
     panel.spacing.x = unit(1.5, "line")
   ) +
-  labs(y = "Expected Remaining Life\n[years]")
+  labs(y = "Remaining life expectancy\n(years)")
 
 ifr_dt <- pop_dt[,
   ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition)) |>
@@ -69,7 +69,7 @@ ifr_p <- ggplot(ifr_dt) + aes(x, y = value, color = method) +
   ) + scale_color_discrete(
     "Method", labels = model_assumption_labels
   ) +
-  scale_x_continuous("Age [years]", breaks = seq(0, 100, by = 10)) +
+  scale_x_continuous("Age (years)", breaks = seq(0, 100, by = 10)) +
   scale_y_log10(
     "Infection Fatality Ratio",
     breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0)
@@ -80,7 +80,7 @@ inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
 ) + facet_iso() +
   geom_line() +
   scale_y_continuous(
-    "Infections\n[incidence per capita]", limits = c(0, 0.08)
+    "Infections\n(incidence per capita)", limits = c(0, 0.08)
   ) +
   scale_color_intervention() +
   scale_linetype_pathogen() +
@@ -88,7 +88,7 @@ inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
   theme_minimal() + theme(
     strip.background = element_blank(), strip.text = element_blank(),
     panel.spacing.x = unit(1.5, "line"),
-    legend.position = "inside", legend.position.inside = c(0.4, 1),
+    legend.position = "inside", legend.position.inside = c(0.4, 1.05),
     legend.justification.inside = c(0.5, 1),
     legend.direction = "horizontal",
     legend.margin = margin(), legend.spacing = unit(0, "line"),
@@ -98,7 +98,8 @@ inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
 
 summary_p <- pop_p + lex_p + ifr_p + inc_p + plot_layout(
   ncol = 1, heights = c(1, 1, 2, 1)
-)
+) +  plot_annotation(tag_levels = 'a', tag_prefix = '(',
+                     tag_suffix = ')  ')
 
 ggsave(
   tail(.args, 1), summary_p, height = 11, width = 8, units = "in", bg = "white"
