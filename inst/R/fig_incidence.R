@@ -27,7 +27,7 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 15*7)]) + aes(
     panel.spacing.x = unit(1.5, "line")
   ) +
   scale_x_simtime() +
-  scale_y_continuous("Infections\n[incidence per capita]") +
+  scale_y_continuous("Infections\n(incidence per capita)") +
   scale_color_intervention() +
   scale_linetype_pathogen()
 
