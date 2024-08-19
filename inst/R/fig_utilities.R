@@ -155,8 +155,8 @@ trap <- function(.target) {
   )
 
   distill_assumption_labels <- c(
-    "Uniform Across Partition", "@ Mean Age",
-    "Prop. to Pop. Density", "paramix"
+    "Uniform\nacross partition", "Mean age",
+    "Prop. to\npop. density", "Prop. to\npop. density\nand mortality"
   ) |> setNames(head(names(model_assumption_labels), -1))
 
   scale_color_intervention <- rejig(

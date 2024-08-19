@@ -39,7 +39,7 @@ p <- ggplot(int_dt[sim_method == method]) + aes(
   theme_bw() + theme(
     element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line"),
-    axis.text.x = element_text(angle = 45)
+    axis.text.x = element_text(angle = 0)
   ) +
   scale_x_discrete("Distillation Assumption", labels = distill_assumption_labels) +
   # scale_y_log10("Years of life saved (thousands)") +
