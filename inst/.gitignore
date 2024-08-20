@@ -3,6 +3,7 @@ output/*
 figure/*
 
 .Rprofile
+.DS_Store
 
 renv/*
 !renv/activate.R
