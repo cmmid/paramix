@@ -7,13 +7,11 @@
 #'
 #' @param ... any number of numeric vectors
 #'
-#' @param open_partition a value coerceable to logical vector; length 1 or 2
-#'
 #' @return a sorted numeric vector with unique values
 #'
 #' @examples
-#' paramix:::make_partition(1:5, open_partition = FALSE)
-#' paramix:::make_partition(5:1, 4, 6, open_partition = c(TRUE, FALSE))
+#' paramix:::make_partition(1:5)
+#' paramix:::make_partition(5:1, 4, 6)
 #'
 make_partition <- function(
   ...
@@ -48,8 +46,9 @@ to_function <- function(x, interp_opts) {
   }
 }
 
-make_weight <- function(f_param, f_density) {
-  return(function(x) f_param(x) * f_density(x))
+#' @title Compose Parameter & Density Functions
+make_weight <- function(f_param, f_dense) {
+  return(function(x) f_param(x) * f_dense(x))
 }
 
 #' @title Blend Parameters
@@ -114,7 +113,7 @@ blend <- function(
 #' [xy.coords()] for details. If the latter, combined with `pars_interp_opts`,
 #' and defaulting to spline interpolation.
 #'
-#' @param f_density like `f_param`, either a density function (though it does
+#' @param f_dense like `f_param`, either a density function (though it does
 #' not have to integrate to 1 like a pdf) or a `data.frame` of values. If the
 #' latter, combined with `dens_interp_opts` and defaulting to constant density
 #' from each x to the next.
@@ -149,7 +148,7 @@ blend <- function(
 #' @export
 alembic <- function(
   f_param,
-  f_density,
+  f_dense,
   model_partition,
   new_partition,
   pars_interp_opts = list(
@@ -167,9 +166,9 @@ alembic <- function(
   uppers <- tail(overall_partition, -1)
 
   f_param <- to_function(f_param, pars_interp_opts)
-  f_density <- to_function(f_density, dens_interp_opts)
+  f_dense <- to_function(f_dense, dens_interp_opts)
 
-  f <- make_weight(f_param, f_density)
+  f <- make_weight(f_param, f_dense)
 
   return(data.table::data.table(from = lowers)[, {
     model_part <- findInterval(from, model_partition)
@@ -181,7 +180,7 @@ alembic <- function(
         f, lowers[i], uppers[i], subdivisions = 1000L
       )$value
       dense[i] <- integrate(
-        f_density, lowers[i], uppers[i], subdivisions = 1000L
+        f_dense, lowers[i], uppers[i], subdivisions = 1000L
       )$value
     }
     .(
