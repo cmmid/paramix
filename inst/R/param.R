@@ -17,7 +17,7 @@ load(.args[2]) # ifr_opts
 # now downselect to focal parameters
 pop_dt <- pop_dt[
   iso3 == pop_dt[, match.arg(.args[3], unique(iso3))]
-]
+][, .(from, weight)]
 f_ifr <- ifr_opts[[match.arg(.args[4], names(ifr_opts))]]
 sim_pars <- disease_pars[[match.arg(.args[4], names(ifr_opts))]]
 
@@ -31,7 +31,7 @@ cmij <- contact_matrix(
 )$matrix
 
 mapping_dt <- alembic(
-  f_param = f_ifr, densities = pop_dt,
+  f_param = f_ifr, f_dense = pop_dt,
   model_partition = model_agelimits,
   new_partition = pop_dt[, seq(min(from), max(from) + 1L)]
 )
@@ -39,7 +39,7 @@ mapping_dt <- alembic(
 # using `parameter_summary` instead of `blend`, because we want to compare to
 # the naive alternatives
 ifr_params <- parameter_summary(
-  f_param = f_ifr, densities = pop_dt,
+  f_param = f_ifr, f_dense = pop_dt,
   model_partition = model_agelimits
 )
 
