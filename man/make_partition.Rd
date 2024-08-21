@@ -4,7 +4,7 @@
 \alias{make_partition}
 \title{Create a Least-Common-Interval Partition}
 \usage{
-make_partition(..., open_partition)
+make_partition(...)
 }
 \arguments{
 \item{...}{any number of numeric vectors}

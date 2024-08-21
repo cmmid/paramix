@@ -16,39 +16,40 @@
 #' paramix:::make_partition(5:1, 4, 6, open_partition = c(TRUE, FALSE))
 #'
 make_partition <- function(
-  ..., open_partition
+  ...
 ) {
   partition <- suppressWarnings(as.numeric(c(...)))
 
   stopifnot(
     "Must provide some partition points." = length(partition) != 0,
-    "May not provide any `NA` values for partition." = !any(is.na(partition)),
-    "Must indicate if partition is open." = !missing(open_partition)
+    "May not provide any `NA` values for partition." = !any(is.na(partition))
   )
-
-  open_partition <- as.logical(open_partition)
-
-  stopifnot(
-    "Open indicator must be length 1 or 2." =
-      length(open_partition) %in% c(1, 2),
-    "Must provide values interpretable as logical." =
-      !any(is.na(open_partition))
-  )
-
-  if (length(open_partition) == 1) open_partition[2] <- open_partition[1]
-
-  if (open_partition[1]) partition <- c(-Inf, partition)
-  if (open_partition[2]) partition <- c(partition, Inf)
 
   return(unique(sort(partition)))
 }
 
-make_density <- function(densities, interpolater = approxfun, ...) {
-  return(interpolater(densities$from, densities$weight, ...))
+
+#' @param x a function or the single argument version of `x` in
+#' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs)
+#'
+#' @param interp_opts if `x` is function, ignored. Otherwise,
+#' an interpolating function and its arguments.
+#'
+#' @return a function
+to_function <- function(x, interp_opts) {
+  if (is.function(x)) {
+    return(x)
+  } else {
+    callargs <- interp_opts
+    callfun <- interp_opts$fun
+    callargs$fun <- NULL
+    callargs$x <- x
+    return(do.call(callfun, args = callargs))
+  }
 }
 
 make_weight <- function(f_param, f_density) {
-  return(function(x, ...) f_param(x, ...) * f_density(x))
+  return(function(x) f_param(x) * f_density(x))
 }
 
 #' @title Blend Parameters
@@ -107,26 +108,28 @@ blend <- function(
 
 #' @title Create the Blending and Distilling Object
 #'
-#' @param f_param a function, `f(x, ...)` which operates on the feature
-#' (e.g. age), and optionally additional arguments, and yields the parameter
-#' value.
+#' @param f_param a function, `f(x)` which transforms the feature (e.g. age),
+#' and yields the parameter value. Alternatively, a `data.frame` where the first
+#' column is the feature (x) and the second is the parameter (y); see
+#' [xy.coords()] for details. If the latter, combined with `pars_interp_opts`,
+#' and defaulting to spline interpolation.
 #'
-#' @param densities a `data.frame` with numeric columns `from` and `weight`. The
-#' `weight` column must be positive, but need not be normalized. Alternatively:
-#' a density function
+#' @param f_density like `f_param`, either a density function (though it does
+#' not have to integrate to 1 like a pdf) or a `data.frame` of values. If the
+#' latter, combined with `dens_interp_opts` and defaulting to constant density
+#' from each x to the next.
 #'
 #' @param model_partition a numeric vector of cut points, which define the
 #' partitioning that will be used in the model
 #'
 #' @param new_partition the partition of the underlying feature
 #'
-#' @param ... optional arguments to `f_param`
+#' @param pars_interp_opts a list, minimally with an element `fun`,
+#' corresponding to an interpolation function. Defaults to [splinefun()]
+#' "natural" interpolation
 #'
-#' @param open_partitions a logical vector, `length(open_partition) == 2`.
-#' Whether the `partitions` argument should be evaluated as open on lower and/or
-#' upper ends - i.e. should `-Inf` and/or `Inf` be pre/appended to the
-#' `partition` argument. n.b., this can also be accomplished by directly
-#' including the `Inf`s in the partition.
+#' @param dens_interp_opts ibid, but for density. Defaults to [approxfun()]
+#' "constant" interpolation
 #'
 #' @return a `data.frame` which maps fractions of the original model partitions
 #' to the desired partitions, according to underlying relative outcome rates and
@@ -139,43 +142,32 @@ blend <- function(
 #' }
 #' age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
 #' age_pyramid <- data.frame(
-#'   from = 0:99, weight = ifelse(0:99 < 65, 1, .99^(0:99-64))
+#'   from = 0:100, weight = ifelse(0:99 < 65, 1, .99^(0:100-64))
 #' ) # flat age distribution, then 1% annual deaths
 #' ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
 #'
 #' @export
 alembic <- function(
   f_param,
-  densities,
+  f_density,
   model_partition,
   new_partition,
-  ...,
-  open_partition = c(lower = FALSE, upper = FALSE)
+  pars_interp_opts = list(
+    fun = stats::splinefun, method = "natural"
+  ),
+  dens_interp_opts = list(
+    fun = stats::approxfun, method = "constant",
+    yleft = 0, yright = 0
+  )
 ) {
 
-  overall_partition <- make_partition(
-    model_partition, new_partition, open_partition = open_partition
-  )
+  overall_partition <- make_partition(model_partition, new_partition)
 
   lowers <- head(overall_partition, -1)
   uppers <- tail(overall_partition, -1)
 
-  f_density <- if (is.function(densities)) {
-    densities
-  } else {
-    approxrule <- c(1, 1)
-    if (!open_partition[1] && overall_partition[1] < min(densities$from)) {
-      approxrule[1] <- 2
-    }
-
-    if (
-      !open_partition[2] && tail(overall_partition, 1) > max(densities$from)
-    ) {
-      approxrule[2] <- 2
-    }
-
-    make_density(densities, method = "constant", rule = approxrule)
-  }
+  f_param <- to_function(f_param, pars_interp_opts)
+  f_density <- to_function(f_density, dens_interp_opts)
 
   f <- make_weight(f_param, f_density)
 

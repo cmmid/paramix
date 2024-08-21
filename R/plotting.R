@@ -5,7 +5,7 @@
 #' Implements several approaches to computing partition-aggregated parameters,
 #' then tables them up for convenient plotting.
 #'
-#' @inheritParams blend
+#' @inheritParams alembic
 #'
 #' @param resolution the number of points to calculate for the underlying
 #' `f_param` function.
@@ -62,14 +62,14 @@
 #' @importFrom data.table melt.data.table
 #' @export
 parameter_summary <- function(
-  f_param, densities, model_partition, ...,
+  f_param, f_dense, model_partition,
   resolution = diff(range(model_partition)) + 1L
 ) {
 
-  partition <- make_partition(model_partition, open_partition = c(FALSE, FALSE))
+  partition <- make_partition(model_partition)
 
   alembic_dt <- alembic(
-    f_param, densities, partition,
+    f_param, f_dense, partition,
     seq(partition[1], tail(partition, 1), length.out = resolution)
   )
 

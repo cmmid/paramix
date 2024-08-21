@@ -6,13 +6,21 @@
 \usage{
 parameter_summary(
   f_param,
-  densities,
+  f_dense,
   model_partition,
-  ...,
   resolution = diff(range(model_partition)) + 1L
 )
 }
 \arguments{
+\item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
+and yields the parameter value. Alternatively, a \code{data.frame} where the first
+column is the feature (x) and the second is the parameter (y); see
+\code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
+and defaulting to spline interpolation.}
+
+\item{model_partition}{a numeric vector of cut points, which define the
+partitioning that will be used in the model}
+
 \item{resolution}{the number of points to calculate for the underlying
 \code{f_param} function.}
 }
