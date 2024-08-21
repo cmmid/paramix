@@ -6,7 +6,7 @@
 \usage{
 alembic(
   f_param,
-  f_density,
+  f_dense,
   model_partition,
   new_partition,
   pars_interp_opts = list(fun = stats::splinefun, method = "natural"),
@@ -21,7 +21,7 @@ column is the feature (x) and the second is the parameter (y); see
 \code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
 and defaulting to spline interpolation.}
 
-\item{f_density}{like \code{f_param}, either a density function (though it does
+\item{f_dense}{like \code{f_param}, either a density function (though it does
 not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
 latter, combined with \code{dens_interp_opts} and defaulting to constant density
 from each x to the next.}

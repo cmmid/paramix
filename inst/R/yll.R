@@ -15,16 +15,20 @@ lex_dt <- lex_dt[
 
 distill_dt <- readRDS(.args[2])
 
-halfages <- distill_dt[, unique(partition[partition != round(partition)])]
+partages <- distill_dt[, unique(partition[partition != round(partition)])]
 
-expander <- data.table(lower = floor(halfages), upper = ceiling(halfages))
+expander <- data.table(lower = floor(partages), upper = ceiling(partages))
 
 lower_dt <- lex_dt[expander, on = .(age = lower), .(index = seq_len(.N), age, ex)]
 upper_dt <- lex_dt[expander, on = .(age = upper), .(index = seq_len(.N), age, ex)]
 
 expand_dt <- lower_dt[
-  upper_dt, on = .(index), .(age = halfages, ex = (ex + i.ex)/2)
-]
+  upper_dt, on = .(index)
+][, .(
+  age = partages[index],
+  ex = approxfun(c(age, i.age), c(ex, i.ex))(partages[index])
+), by = index
+][, .(age, ex)]
 
 ex_dt <- rbind(lex_dt[, .(age, ex)], expand_dt)
 
