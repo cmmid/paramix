@@ -510,15 +510,15 @@
       "Version": "0.0.0.9001",
       "Source": "GitHub",
       "RemoteType": "github",
+      "RemoteHost": "api.github.com",
       "RemoteUsername": "cmmid",
       "RemoteRepo": "paramix",
       "RemoteRef": "main",
-      "RemoteSha": "92f4216b968d4830c4f8f40651fec87c6cfd554e",
-      "RemoteHost": "api.github.com",
+      "RemoteSha": "f5f50e2139cdf644a40f9463269c06978413dd44",
       "Requirements": [
         "data.table"
       ],
-      "Hash": "e9cf328c0ad99a5e215b5d2fc04005cc"
+      "Hash": "f97c85805577f5e692bb7ddbea81bfb3"
     },
     "patchwork": {
       "Package": "patchwork",
