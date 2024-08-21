@@ -8,8 +8,6 @@ make_partition(...)
 }
 \arguments{
 \item{...}{any number of numeric vectors}
-
-\item{open_partition}{a value coerceable to logical vector; length 1 or 2}
 }
 \value{
 a sorted numeric vector with unique values
@@ -19,7 +17,7 @@ Internal utility method for creating partitions, possibly from multiple
 distinct partitions. Validates inputs and potential creates open ends.
 }
 \examples{
-paramix:::make_partition(1:5, open_partition = FALSE)
-paramix:::make_partition(5:1, 4, 6, open_partition = c(TRUE, FALSE))
+paramix:::make_partition(1:5)
+paramix:::make_partition(5:1, 4, 6)
 
 }

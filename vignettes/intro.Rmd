@@ -75,7 +75,7 @@ We can compare the various calculations of the IFR for two different population 
  - the function average, assuming uniform age distribution, i.e. $\int_a^b \textrm{IFR}(\textrm{age}) d\textrm{age}$
  - the weighted function average (as above)
 
-Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and [65,101), corresponding roughly to pre-school age children, school age individuals, prime working age adults, and post-working age adults. First, we need to get the relevant values:
+Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and [65,101], corresponding roughly to pre-school age children, school age individuals, prime working age adults, and post-working age adults. First, we need to get the relevant values:
 
 ```{r, create_pops, cache = TRUE}
 # our model age group cut points
@@ -94,7 +94,7 @@ We can calculate the IFR values for each model age group, under different approa
 ```{r ifrplotsetup, cache=TRUE}
 plot_dt <- density_dt[, { # compute parameters for each country of interest
   paramix::parameter_summary(
-    f_param = ifr_levin, densities = .SD, model_agelimits
+    f_param = ifr_levin, f_dense = .SD, model_agelimits
   )
 }, by = name]
 ```
@@ -150,9 +150,9 @@ Clearly, these different approaches result in different mortality outcomes for o
 
 In the previous section, we used a convenience method the package provides for plotting. More typically, you will want to use the three main functions in the package:
 
- - `alembic()` to create a properly weighted mapping from one resolution to another
- - `blend()` to create the correctly weighted mixture parameters
- - `distill()` to apply an `alembic` mapping to model outputs
+ - `alembic()` to make a weighted mapping from one resolution to another
+ - `blend()` to aggregate the associated weighted mixture parameters
+ - `distill()` to impute finer scale outcomes from model outputs
 
 Revisiting our previous example, the properly age-weighted IFRs look like:
 
@@ -160,7 +160,7 @@ Revisiting our previous example, the properly age-weighted IFRs look like:
 # setup the model to outcome mapping using `alembic`s
 mapping_dt <- density_dt[,
   paramix::alembic(
-    ifr_levin, densities = .SD,
+    f_param = ifr_levin, f_dense = .SD,
     model_partition = model_agelimits,
     new_partition = seq(min(from), max(from) + 1L)
   ),
@@ -289,16 +289,31 @@ life_expectancy_dt[,
 life_expectancy_dt[, ex := rev(cumsum(rev(Lx) / 1000)), by = name]
 
 # because of the selected breakpoints, there are some half-ages, so will
-# manually add those as mean of age & age + 1 ex (ignoring other features)
-life_expectancy_dt <- rbind(
-  life_expectancy_dt,
-  life_expectancy_dt[age %in% c(2, 12, 42, 82)][, age := age + 0.5][,
-    ex := (ex + life_expectancy_dt[age %in% (c(2, 12, 42, 82) + 1L)]$ex) / 2
-  ]
+# linearly interpolate between the relevant ages
+expander <- distill_methods_dt[, .(
+  age = unique(partition[partition != round(partition)])
+), by = name][, .(
+  lower = floor(age), upper = ceiling(age), tar = age, index = seq_len(.N)
+), by = name]
+
+lower_dt <- life_expectancy_dt[expander, on = .(name, age = lower), .(name, index, age, ex)]
+upper_dt <- life_expectancy_dt[expander, on = .(name, age = upper), .(name, index, age, ex)]
+
+expand_dt <- lower_dt[
+  upper_dt, on = .(name, index)
+][expander, on = .(name, index)][, .(
+  age = tar,
+  ex = approxfun(c(age, i.age), c(ex, i.ex))(tar)
+), by = .(name, index)
+][, .(name, age, ex)]
+
+lex_dt <- rbind(
+  life_expectancy_dt[, .(name, age, ex)],
+  expand_dt
 )
 
 yll_dt <- distill_methods_dt[
-  life_expectancy_dt, on = .(name, partition = age)
+  lex_dt, on = .(name, partition = age)
 ][, .(YLL = sum(value * ex)), by = .(name, method)]
 
 yllord <- yll_dt[name == "Afghanistan", method[order(YLL)]]
