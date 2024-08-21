@@ -6,34 +6,37 @@
 \usage{
 alembic(
   f_param,
-  densities,
+  f_density,
   model_partition,
   new_partition,
-  ...,
-  open_partition = c(lower = FALSE, upper = FALSE)
+  pars_interp_opts = list(fun = stats::splinefun, method = "natural"),
+  dens_interp_opts = list(fun = stats::approxfun, method = "constant", yleft = 0, yright
+    = 0)
 )
 }
 \arguments{
-\item{f_param}{a function, \code{f(x, ...)} which operates on the feature
-(e.g. age), and optionally additional arguments, and yields the parameter
-value.}
+\item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
+and yields the parameter value. Alternatively, a \code{data.frame} where the first
+column is the feature (x) and the second is the parameter (y); see
+\code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
+and defaulting to spline interpolation.}
 
-\item{densities}{a \code{data.frame} with numeric columns \code{from} and \code{weight}. The
-\code{weight} column must be positive, but need not be normalized. Alternatively:
-a density function}
+\item{f_density}{like \code{f_param}, either a density function (though it does
+not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
+latter, combined with \code{dens_interp_opts} and defaulting to constant density
+from each x to the next.}
 
 \item{model_partition}{a numeric vector of cut points, which define the
 partitioning that will be used in the model}
 
 \item{new_partition}{the partition of the underlying feature}
 
-\item{...}{optional arguments to \code{f_param}}
+\item{pars_interp_opts}{a list, minimally with an element \code{fun},
+corresponding to an interpolation function. Defaults to \code{\link[=splinefun]{splinefun()}}
+"natural" interpolation}
 
-\item{open_partitions}{a logical vector, \code{length(open_partition) == 2}.
-Whether the \code{partitions} argument should be evaluated as open on lower and/or
-upper ends - i.e. should \code{-Inf} and/or \code{Inf} be pre/appended to the
-\code{partition} argument. n.b., this can also be accomplished by directly
-including the \code{Inf}s in the partition.}
+\item{dens_interp_opts}{ibid, but for density. Defaults to \code{\link[=approxfun]{approxfun()}}
+"constant" interpolation}
 }
 \value{
 a \code{data.frame} which maps fractions of the original model partitions
@@ -50,7 +53,7 @@ ifr_levin <- function(age_in_years) {
 }
 age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
 age_pyramid <- data.frame(
-  from = 0:99, weight = ifelse(0:99 < 65, 1, .99^(0:99-64))
+  from = 0:100, weight = ifelse(0:99 < 65, 1, .99^(0:100-64))
 ) # flat age distribution, then 1\% annual deaths
 ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
 
