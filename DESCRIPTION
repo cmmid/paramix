@@ -1,5 +1,5 @@
 Package: paramix
-Title: Age-Based Aggregation and Disaggregation for Analysis of Compartmental Models
+Title: Aggregate and Disaggregate Continuous Parameters for Compartmental Models
 Version: 0.0.1
 Authors@R: 
     c(person("Carl", "Pearson", , "carl.ab.pearson@gmail.com", role = c("aut", "cre"),
