@@ -48,20 +48,20 @@ IFRSCN ?= SC2 FLU
 # create all combinations of scenarios
 $(foreach pop,${POPSCN},$(foreach ifr,${IFRSCN},$(call $(eval ALLSCN += ${pop}_${ifr}))))
 
-${DATDIR}/population.rds: R/population.R | ${RENV} ${DATDIR}
+${DATDIR}/population.rds: scripts/population.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/lex.rds: R/lex.R | ${RENV} ${DATDIR}
+${DATDIR}/lex.rds: scripts/lex.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/odin.rda: R/odin.R | ${RENV} ${DATDIR}
+${DATDIR}/odin.rda: scripts/odin.R | ${RENV} ${DATDIR}
 	$(call R)
 
 # n.b. for additional pathogens, this would need to be expanded
-${DATDIR}/disease_pars.rda: R/disease_pars.R $(call dat,population.rds lex.rds)
+${DATDIR}/disease_pars.rda: scripts/disease_pars.R $(call dat,population.rds lex.rds)
 	$(call R)
 
-${DATDIR}/param_%.rda: R/param.R $(call dat,population.rds disease_pars.rda)
+${DATDIR}/param_%.rda: scripts/param.R $(call dat,population.rds disease_pars.rda)
 	$(call R,$(subst _, ,$*))
 
 allinputs: $(call dat,population.rds lex.rds odin.rda disease_pars.rda $(patsubst %,param_%.rda,${ALLSCN}))
@@ -69,29 +69,29 @@ allinputs: $(call dat,population.rds lex.rds odin.rda disease_pars.rda $(patsubs
 ##### OUTPUTS ##################################################################
 # simulation time series, distillations, ylls - by various methods
 
-${OUTDIR}/sim_%.rds: R/simulate.R $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}
+${OUTDIR}/sim_%.rds: scripts/simulate.R $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}
 	$(call R,$(firstword $(subst _, ,$*)))
 
 ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 allsim: ${ALLSIM}
 
-${OUTDIR}/distill_%.rds: R/distill.R $(call dat,population.rds param_%.rda) ${OUTDIR}/sim_%.rds
+${OUTDIR}/distill_%.rds: scripts/distill.R $(call dat,population.rds param_%.rda) ${OUTDIR}/sim_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
 alldistill: $(patsubst %,${OUTDIR}/distill_%.rds,${ALLSCN})
 
-${OUTDIR}/yll_%.rds: R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
+${OUTDIR}/yll_%.rds: scripts/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
 allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 
-# ${OUTDIR}/vaxthreshold_%.rds: $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}R/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
+# ${OUTDIR}/vaxthreshold_%.rds: $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR} scripts/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 #	$(call R,$(firstword $(subst _, ,$*)))
 
-${OUTDIR}/incidence.rds: R/incidence.R $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
+${OUTDIR}/incidence.rds: scripts/incidence.R $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 	$(call R)
 
-${OUTDIR}/consolidated.rds: R/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
+${OUTDIR}/consolidated.rds: scripts/consolidate.R $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
 	$(call R)
 
 allouts: ${OUTDIR}/consolidated.rds ${OUTDIR}/incidence.rds
@@ -100,24 +100,24 @@ allouts: ${OUTDIR}/consolidated.rds ${OUTDIR}/incidence.rds
 
 UTIL := ${FIGDIR}/fig_utilities.rda
 
-${UTIL}: R/fig_utilities.R | ${FIGDIR} ${RENV}
+${UTIL}: scripts/fig_utilities.R | ${FIGDIR} ${RENV}
 	$(call R)
 
 # TODO what figs?
-#${FIGDIR}/fig1.png: R/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
+#${FIGDIR}/fig1.png: scripts/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
 #	$(call R)
 
-${FIGDIR}/summary.png: R/fig_fullsummary.R ${UTIL} \
+${FIGDIR}/summary.png: scripts/fig_fullsummary.R ${UTIL} \
 $(call dat,population.rds lex.rds disease_pars.rda) ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/incidence.png: R/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
+${FIGDIR}/incidence.png: scripts/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/averted.png: R/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
+${FIGDIR}/averted.png: scripts/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/yll.png: R/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
+${FIGDIR}/yll.png: scripts/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
 	$(call R)
 
 allfigs: $(call fig,incidence averted yll summary)

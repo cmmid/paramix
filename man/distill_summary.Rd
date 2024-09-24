@@ -10,7 +10,7 @@ distill_summary(model_outcomes_dt, alembic_dt)
 \item{model_outcomes_dt}{a \code{data.table} (or convertable to such) with columns
 \code{model_from} and \code{value}}
 
-\item{model_upper}{the upper limit of the last partition}
+\item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
 }
 \description{
 Implements several approaches to imputing higher resolution outcomes, then
@@ -38,7 +38,5 @@ model_outcomes_dt <- density_dt[, .(value = sum(f_param(from) * weight)),
 ]
 
 ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
-
-
 
 }

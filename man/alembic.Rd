@@ -53,7 +53,7 @@ ifr_levin <- function(age_in_years) {
 }
 age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
 age_pyramid <- data.frame(
-  from = 0:100, weight = ifelse(0:99 < 65, 1, .99^(0:100-64))
+  from = 0:100, weight = ifelse(0:100 < 65, 1, .99^(0:100-64))
 ) # flat age distribution, then 1\% annual deaths
 ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
 

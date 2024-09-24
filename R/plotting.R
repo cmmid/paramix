@@ -101,6 +101,10 @@ parameter_summary <- function(
 
 }
 
+utils::globalVariables(c(
+  "f_val", "x", "model_category", "new_from", "density", "value"
+))
+
 #' @title Distillation Calculation Comparison Summary
 #'
 #' @description
@@ -110,7 +114,7 @@ parameter_summary <- function(
 #' @param model_outcomes_dt a `data.table` (or convertable to such) with columns
 #' `model_from` and `value`
 #'
-#' @param model_upper the upper limit of the last partition
+#' @inheritParams blend
 #'
 #' @examples
 #' library(data.table)
@@ -135,9 +139,8 @@ parameter_summary <- function(
 #'
 #' ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
 #'
-#'
-#'
-#' @importFrom data.table setDT
+#' @import data.table
+#' @importFrom stats weighted.mean
 #' @export
 distill_summary <- function(
   model_outcomes_dt,
@@ -176,3 +179,5 @@ distill_summary <- function(
   ))
 
 }
+
+utils::globalVariables(c("model_from", "weigh_at", "method"))

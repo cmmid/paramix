@@ -13,3 +13,6 @@
 #' @importFrom data.table data.table
 ## usethis namespace: end
 NULL
+
+# also for data.table . shorthand
+utils::globalVariables(c("."))
