@@ -6,7 +6,7 @@
 \alias{paramix-package}
 \title{paramix: Age-Based Aggregation and Disaggregation for Analysis of Compartmental Models}
 \description{
-The `paramix` package provides a convenient framework for aggregating and disaggregating age-dependent effects, for example case fatality ratio, for proper parametrization of of lower-resolution compartmental models - that is, with relatively broad age bins - and subsequent upscaling of model outputs for use when calculating age-sensitive measures like years-life-lost.
+The `paramix` package provides a convenient framework for aggregating and disaggregating continuously varying parameters (for example, case fatality ratio, with age) for proper parametrization of lower-resolution compartmental models (for example, with broad age categories) and subsequent upscaling of model outputs at high resolution (for example, as needed when calculating age-sensitive measures like years-life-lost).
 }
 \author{
 \strong{Maintainer}: Carl Pearson \email{carl.ab.pearson@gmail.com} (\href{https://orcid.org/0000-0003-0701-7860}{ORCID})

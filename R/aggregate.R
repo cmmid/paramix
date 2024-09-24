@@ -27,6 +27,8 @@ make_partition <- function(
 }
 
 
+#' @title Internal Conversion of Data to Function
+#'
 #' @param x a function or the single argument version of `x` in
 #' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs)
 #'
@@ -34,6 +36,7 @@ make_partition <- function(
 #' an interpolating function and its arguments.
 #'
 #' @return a function
+#' @keywords internal
 to_function <- function(x, interp_opts) {
   if (is.function(x)) {
     return(x)
@@ -47,6 +50,14 @@ to_function <- function(x, interp_opts) {
 }
 
 #' @title Compose Parameter & Density Functions
+#'
+#' @param f_param a function; the parameter function, varying with the aggregate
+#'
+#' @param f_dense a function; the density function, varying with the aggregate
+#'
+#' @return a new function, f(x) = f_param(x)*f_density(x)
+#'
+#' @keywords internal
 make_weight <- function(f_param, f_dense) {
   return(function(x) f_param(x) * f_dense(x))
 }
@@ -105,6 +116,8 @@ blend <- function(
   return(alembic_dt[, .(value = sum(weight) / sum(density)), by = model_from])
 }
 
+utils::globalVariables(c("weight", "density", "model_from"))
+
 #' @title Create the Blending and Distilling Object
 #'
 #' @param f_param a function, `f(x)` which transforms the feature (e.g. age),
@@ -141,10 +154,13 @@ blend <- function(
 #' }
 #' age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
 #' age_pyramid <- data.frame(
-#'   from = 0:100, weight = ifelse(0:99 < 65, 1, .99^(0:100-64))
+#'   from = 0:100, weight = ifelse(0:100 < 65, 1, .99^(0:100-64))
 #' ) # flat age distribution, then 1% annual deaths
 #' ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
 #'
+#' @importFrom utils head tail
+#' @importFrom stats integrate
+#' @import data.table
 #' @export
 alembic <- function(
   f_param,
@@ -170,7 +186,7 @@ alembic <- function(
 
   f <- make_weight(f_param, f_dense)
 
-  return(data.table::data.table(from = lowers)[, {
+  return(data.table(from = lowers)[, {
     model_part <- findInterval(from, model_partition)
     new_part <- findInterval(from, new_partition)
     weight <- numeric(length(from))
@@ -191,6 +207,8 @@ alembic <- function(
 
 }
 
+utils::globalVariables(c("from"))
+
 #' @title Distill Outcomes
 #'
 #' @description
@@ -205,6 +223,7 @@ alembic <- function(
 #'
 #' @return a `data.frame` mirroring `outcomes`, but with
 #'
+#' @import data.table
 #' @export
 distill <- function(
   outcomes, alembic_dt
@@ -222,3 +241,5 @@ distill <- function(
   ), by = new_from])
 
 }
+
+utils::globalVariables(c("weight", "model_from", "model_fraction"))
