@@ -84,7 +84,7 @@ inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
   ) +
   scale_color_intervention() +
   scale_linetype_pathogen() +
-  scale_x_simtime() +
+  scale_x_simtime('Simulation time (weeks)') +
   theme_minimal() + theme(
     strip.background = element_blank(), strip.text = element_blank(),
     panel.spacing.x = unit(1.5, "line"),

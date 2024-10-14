@@ -1,5 +1,6 @@
 
 require(data.table)
+source('scripts/odin.R')
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
@@ -25,6 +26,10 @@ epidemic_time_series <- function(
   disease_pars,
   contact_mat
 ) with(disease_pars, {
+
+  # print(eigen(disease_pars$infection_delays[2]*
+  #               disease_pars$transmissibility*
+  #               contact_mat)$values[1])
 
   return(epidemic_run(
     init_infected,

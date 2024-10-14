@@ -234,7 +234,7 @@ distill_methods_dt <- model_deaths_dt[,
 
 You can see the calculations by entering `paramix::distill_summary` (no parentheses) as an R prompt. Plotted, the results for the four different methods of calculation look like:
 
-```{r alembicplot, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
+```{r alembicplot, echo = FALSE, warning = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 5, , dpi = 600}
 distill_labels <- c(
   f_mean = "Deaths at mean age",
   f_mid = "Deaths uniform across age group",
