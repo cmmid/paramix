@@ -144,7 +144,7 @@ trap <- function(.target) {
     setNames(c("none", paste0("vax_", c("young", "working", "older"))))
   intervention_labels[1] <- "Nobody"
   # selected using colorbrewer2.org: https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=5
-  intervention_cols <- c("#0868ac", "#43a2ca", "#7bccc4", "#bae4bc") |>
+  intervention_cols <- c("black", "#fecc5c", "#fd8d3c", "#d7191c") |>
     setNames(names(intervention_labels))
 
   pathogen_labels <- c(FLU = "Flu-like", SC2 = "COVID-like")
@@ -153,21 +153,23 @@ trap <- function(.target) {
     f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix",
     f_val = "IFR(age)"
   )
+  model_assumption_cols <- c("#d01c8b", "#f1b6da", "#b8e186", "#4dac26", "black") |>
+    setNames(names(model_assumption_labels))
 
   distill_assumption_labels <- c(
-    "Uniform\nacross partition", "Mean age",
-    "Prop. to\npop. density", "Prop. to\npop. density\nand mortality"
+    "Uniform\nacross age group", "Mean age",
+    "Prop. to\npop. density", "paramix"
   ) |> setNames(head(names(model_assumption_labels), -1))
 
   scale_color_intervention <- rejig(
-    scale_color_manual, name = "Vaccinate...",
+    scale_color_manual, name = "Vaccinate ",
     breaks = names(intervention_labels), labels = intervention_labels,
     values = intervention_cols,
     aesthetics = c("color", "fill")
   )
 
   scale_x_simtime <- rejig(
-    scale_x_continuous, name = "Simulation Time [weeks]",
+    scale_x_continuous, name = "Simulation Time (weeks)",
     breaks = \(lims) seq(0, lims[2], by = 7), labels = \(b) b / 7,
     expand = expansion()
   )
