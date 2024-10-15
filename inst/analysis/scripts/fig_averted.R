@@ -26,6 +26,8 @@ int_dt <- ts_dt[intervention != "none", .(
 
 int_dt[, averted_death := i.deaths - deaths]
 
+int_dt$method <- factor(int_dt$method, levels=unique(int_dt$method))
+
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
 p <- ggplot(int_dt) + aes(
@@ -39,7 +41,7 @@ p <- ggplot(int_dt) + aes(
     element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line")
   ) +
-  scale_x_discrete("Model Assumption", labels = model_assumption_labels) +
+  scale_x_discrete("Aggregation assumption", labels = model_assumption_labels) +
   scale_y_continuous("Deaths averted (per 1000)") +
   scale_color_intervention(
     breaks = rev(names(intervention_labels)) # order by ranking
