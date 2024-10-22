@@ -33,7 +33,7 @@ cmij <- contact_matrix(
 mapping_dt <- alembic(
   f_param = f_ifr, f_dense = pop_dt,
   model_partition = model_agelimits,
-  new_partition = pop_dt[, seq(min(from), max(from) + 1L)]
+  output_partition = pop_dt[, seq(min(from), max(from) + 1L)]
 )
 
 # using `parameter_summary` instead of `blend`, because we want to compare to

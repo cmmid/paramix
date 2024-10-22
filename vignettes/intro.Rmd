@@ -162,7 +162,7 @@ mapping_dt <- density_dt[,
   paramix::alembic(
     f_param = ifr_levin, f_dense = .SD,
     model_partition = model_agelimits,
-    new_partition = seq(min(from), max(from) + 1L)
+    output_partition = seq(min(from), max(from) + 1L)
   ),
   by = name
 ]
