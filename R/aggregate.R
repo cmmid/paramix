@@ -134,7 +134,7 @@ utils::globalVariables(c("weight", "density", "model_from"))
 #' @param model_partition a numeric vector of cut points, which define the
 #' partitioning that will be used in the model
 #'
-#' @param new_partition the partition of the underlying feature
+#' @param output_partition the partition of the underlying feature
 #'
 #' @param pars_interp_opts a list, minimally with an element `fun`,
 #' corresponding to an interpolation function. Defaults to [splinefun()]
@@ -166,7 +166,7 @@ alembic <- function(
   f_param,
   f_dense,
   model_partition,
-  new_partition,
+  output_partition,
   pars_interp_opts = list(
     fun = stats::splinefun, method = "natural"
   ),
@@ -176,7 +176,7 @@ alembic <- function(
   )
 ) {
 
-  overall_partition <- make_partition(model_partition, new_partition)
+  overall_partition <- make_partition(model_partition, output_partition)
 
   lowers <- head(overall_partition, -1)
   uppers <- tail(overall_partition, -1)
@@ -186,9 +186,9 @@ alembic <- function(
 
   f <- make_weight(f_param, f_dense)
 
-  return(data.table(from = lowers)[, {
+  ret <- data.table(from = lowers)[, {
     model_part <- findInterval(from, model_partition)
-    new_part <- findInterval(from, new_partition)
+    new_part <- findInterval(from, output_partition)
     weight <- numeric(length(from))
     dense <- numeric(length(from))
     for (i in seq_along(weight)) {
@@ -201,9 +201,14 @@ alembic <- function(
     }
     .(
       model_from = model_partition[model_part],
-      new_from = new_partition[new_part], weight = weight, density = dense
+      new_from = output_partition[new_part], weight = weight, density = dense
     )
-  }])
+  }]
+
+  setattr(ret, "f_param", f_param)
+  setattr(ret, "f_dense", f_dense)
+
+  return(ret)
 
 }
 

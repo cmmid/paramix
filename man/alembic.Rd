@@ -8,7 +8,7 @@ alembic(
   f_param,
   f_dense,
   model_partition,
-  new_partition,
+  output_partition,
   pars_interp_opts = list(fun = stats::splinefun, method = "natural"),
   dens_interp_opts = list(fun = stats::approxfun, method = "constant", yleft = 0, yright
     = 0)
@@ -29,7 +29,7 @@ from each x to the next.}
 \item{model_partition}{a numeric vector of cut points, which define the
 partitioning that will be used in the model}
 
-\item{new_partition}{the partition of the underlying feature}
+\item{output_partition}{the partition of the underlying feature}
 
 \item{pars_interp_opts}{a list, minimally with an element \code{fun},
 corresponding to an interpolation function. Defaults to \code{\link[=splinefun]{splinefun()}}
