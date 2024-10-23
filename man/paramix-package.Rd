@@ -8,6 +8,13 @@
 \description{
 The `paramix` package provides a convenient framework for aggregating and disaggregating continuously varying parameters (for example, case fatality ratio, with age) for proper parametrization of lower-resolution compartmental models (for example, with broad age categories) and subsequent upscaling of model outputs at high resolution (for example, as needed when calculating age-sensitive measures like years-life-lost).
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://cmmid.github.io/paramix/}
+}
+
+}
 \author{
 \strong{Maintainer}: Carl Pearson \email{carl.ab.pearson@gmail.com} (\href{https://orcid.org/0000-0003-0701-7860}{ORCID})
 
