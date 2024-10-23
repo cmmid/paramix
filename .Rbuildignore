@@ -15,3 +15,7 @@ README.md
 \.Rproj$
 .Rhistory$
 .Rprofile$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
