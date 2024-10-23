@@ -221,27 +221,37 @@ utils::globalVariables(c("from"))
 #'
 #' @inheritParams blend
 #'
-#' @param outcomes a long-format `data.frame` with columns `model_from` and
-#' `value`, optionally others that will be preserved
+#' @param outcomes_dt a long-format `data.frame` with a column either named
+#' `from` or `model_from` and a column `value` (other columns will be silently
+#' ignored)
 #'
-#' @return a `data.frame` mirroring `outcomes`, but with
+#' @details
+#' When the `value` column is re-calculated, note that it will aggregate all
+#' matching `from` / `model_from` rows in `outcomes_dt`. If you need to group
+#' by other features in your input data (e.g. if you need to distill outcomes
+#' across multiple simulation outputs), that has to be done outside of any call
+#' to `distill()`.
+#'
+#'
+#' @return a `data.frame`, with `new_from` and recalculated `value` column
 #'
 #' @import data.table
 #' @export
 distill <- function(
-  outcomes, alembic_dt
+  alembic_dt, outcomes_dt
 ) {
 
-  setnames(setDT(outcomes), "from", "model_from", skip_absent = TRUE)
+  setnames(setDT(outcomes_dt), "from", "model_from", skip_absent = TRUE)
 
   mapping <- alembic_dt[, .(
-    new_from, model_fraction = weight / sum(weight)),
-    by = model_from
+    new_from, model_fraction = weight / sum(weight)
+    ), by = model_from
   ]
 
-  return(outcomes[mapping, on = .(model_from)][, .(
-    value = sum(value * model_fraction)
-  ), by = new_from])
+  return(outcomes_dt[mapping, on = .(model_from)][,
+    .(value = sum(value * model_fraction)),
+    by = new_from
+  ])
 
 }
 

@@ -171,7 +171,7 @@ distill_summary <- function(
 
     # approach 4: proportionally to age *and* relative mortality rates
     setnames(
-      distill(model_outcomes_dt, alembic_dt)[, method := "wm_f"],
+      distill(alembic_dt, model_outcomes_dt)[, method := "wm_f"],
       "new_from", "partition"
     )
   ))
