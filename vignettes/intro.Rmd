@@ -42,8 +42,7 @@ The SARS-COV-2 pathogen causes COVID-19, which has a distinctly age-specific mor
 
 ```{r ifrfdef}
 ifr_levin <- function(age_in_years) {
-  scaled <- exp(-7.56 + 0.121 * age_in_years)
-  scaled / (100 + scaled)
+  (10^(-3.27 + 0.0524 * age_in_years))/100
 }
 ```
 
@@ -52,7 +51,8 @@ ggplot(
   data.frame(x = 0:100, y = ifr_levin(0:100))
 ) + aes(x, y) +
   geom_line() + theme_minimal() +
-  labs(x = "Age", y = "Infection-fatality ratio")
+  scale_y_log10("Infection-fatality ratio") +
+  labs(x = "Age")
 ```
 
 To evaluate the threat of an infectious disease, researchers often calculate expected "years life lost" (YLLs). Based on age-specific mortality data, we can estimate how many years individuals at various ages can expect to live. People who die of a modelled illness lose a corresponding number of years of life, depending on their age at death. 
@@ -170,7 +170,7 @@ mapping_dt <- density_dt[,
   paramix::alembic(
     f_param = ifr_levin, f_dense = .SD,
     model_partition = model_agelimits,
-    output_partition = seq(min(from), max(from) + 1L)
+    output_partition = seq(min(from), max(from) + 1L, by = 5L)
   ),
   by = name
 ]
