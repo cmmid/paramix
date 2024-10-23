@@ -83,21 +83,23 @@ model_agelimits <- c(0, 5, 20, 65, 101)
 # get select data from World Population Prospects estimates
 data("popF", package = "wpp2019")
 data("popM", package = "wpp2019")
+
 pop_dt <- as.data.table(popF)[,
   .(name, age, popF = `2020`)
 ][
   as.data.table(popM), on = c("name", "age"),
-  .(name, age = as.integer(gsub("^(\\d+)[-+].*$","\\1",age)), popF, popM = `2020`)
-][
+  .(name, age, popF, popM = `2020`)
+][, age := as.integer(gsub("^(\\d+)[-+].*$","\\1", age)) ][
   name %like% "Afghanistan|United Kingdom"
 ]
 
-density_dt <- pop_dt[
+density_dt <- pop_dt[,
   .(
     name, from = age,
     weight = popF + popM
   )
 ]
+
 rm(popF)
 rm(popM)
 ```
@@ -288,9 +290,9 @@ life_expectancy_dt <- as.data.table(mxF)[,
 ][pop_dt, on = .(name, age), .(name, age, mx = (mxF*popF + mxM*popM)/(popF + popM))]
 
 life_expectancy_dt[,
-  ax := fifelse(age == 0, 0.2, 0.5)
+  ax := 0.5
 ][,
-  qx := fifelse(age == max(age), 1, mx / (1 + mx * (1 - ax)))
+  qx := fifelse(age == max(age), 1, c(diff(age), 0)*mx / (1 + c(diff(age), 0)*mx * (1 - ax)))
 ]
 life_expectancy_dt[age == 0, lx := 1000]
 life_expectancy_dt[, lx := {
@@ -298,7 +300,7 @@ life_expectancy_dt[, lx := {
   for (i in 2:.N) {
     tmp[i] <- (1 - qx[i - 1]) * tmp[i - 1]
   }
-  tmp
+  pmax(tmp, 0)
 }, by = name]
 life_expectancy_dt[,
   Lx := c(
@@ -308,6 +310,10 @@ life_expectancy_dt[,
 ]
 life_expectancy_dt[, ex := rev(cumsum(rev(Lx) / 1000)), by = name]
 
+life_ex_interpolated_dt <- life_expectancy_dt[,
+  .(age = 0:100, ex = stats::approxfun(age, ex)(0:100))
+, by=name]
+
 # because of the selected breakpoints, there are some half-ages, so will
 # linearly interpolate between the relevant ages
 expander <- distill_methods_dt[, .(
@@ -316,8 +322,8 @@ expander <- distill_methods_dt[, .(
   lower = floor(age), upper = ceiling(age), tar = age, index = seq_len(.N)
 ), by = name]
 
-lower_dt <- life_expectancy_dt[expander, on = .(name, age = lower), .(name, index, age, ex)]
-upper_dt <- life_expectancy_dt[expander, on = .(name, age = upper), .(name, index, age, ex)]
+lower_dt <- life_ex_interpolated_dt[expander, on = .(name, age = lower), .(name, index, age, ex)]
+upper_dt <- life_ex_interpolated_dt[expander, on = .(name, age = upper), .(name, index, age, ex)]
 
 expand_dt <- lower_dt[
   upper_dt, on = .(name, index)
@@ -328,7 +334,7 @@ expand_dt <- lower_dt[
 ][, .(name, age, ex)]
 
 lex_dt <- rbind(
-  life_expectancy_dt[, .(name, age, ex)],
+  life_ex_interpolated_dt[, .(name, age, ex)],
   expand_dt
 )
 

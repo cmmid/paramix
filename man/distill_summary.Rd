@@ -19,8 +19,7 @@ tables them up for convenient plotting.
 \examples{
 library(data.table)
 f_param <- function(age_in_years) {
-  scaled <- exp(-7.56 + 0.121 * age_in_years)
-  scaled / (100 + scaled)
+  (10^(-3.27 + 0.0524 * age_in_years))/100
 }
 
 model_partition <- c(0, 5, 20, 65, 101)

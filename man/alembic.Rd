@@ -48,8 +48,7 @@ Create the Blending and Distilling Object
 }
 \examples{
 ifr_levin <- function(age_in_years) {
-  scaled <- exp(-7.56 + 0.121 * age_in_years)
-  scaled / (100 + scaled)
+  (10^(-3.27 + 0.0524 * age_in_years))/100
 }
 age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
 age_pyramid <- data.frame(

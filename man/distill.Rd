@@ -4,19 +4,27 @@
 \alias{distill}
 \title{Distill Outcomes}
 \usage{
-distill(outcomes, alembic_dt)
+distill(alembic_dt, outcomes_dt)
 }
 \arguments{
-\item{outcomes}{a long-format \code{data.frame} with columns \code{model_from} and
-\code{value}, optionally others that will be preserved}
-
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
+
+\item{outcomes_dt}{a long-format \code{data.frame} with a column either named
+\code{from} or \code{model_from} and a column \code{value} (other columns will be silently
+ignored)}
 }
 \value{
-a \code{data.frame} mirroring \code{outcomes}, but with
+a \code{data.frame}, with \code{new_from} and recalculated \code{value} column
 }
 \description{
 \code{distill} takes a low-age resolution outcome, for example deaths,
 and proportionally distributes that outcome into a higher age resolution for
 use in subsequent analyses like years-life-lost style calculations.
+}
+\details{
+When the \code{value} column is re-calculated, note that it will aggregate all
+matching \code{from} / \code{model_from} rows in \code{outcomes_dt}. If you need to group
+by other features in your input data (e.g. if you need to distill outcomes
+across multiple simulation outputs), that has to be done outside of any call
+to \code{distill()}.
 }
