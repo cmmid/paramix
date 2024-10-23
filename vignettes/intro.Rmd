@@ -83,15 +83,20 @@ model_agelimits <- c(0, 5, 20, 65, 101)
 # get select data from World Population Prospects estimates
 data("popF", package = "wpp2019")
 data("popM", package = "wpp2019")
-density_dt <- as.data.table(popF)[,
-  .(name, age, tmp = `2020`)
+pop_dt <- as.data.table(popF)[,
+  .(name, age, popF = `2020`)
 ][
   as.data.table(popM), on = c("name", "age"),
-  .(name, age, weight = tmp + `2020`)
+  .(name, age = as.integer(gsub("^(\\d+)[-+].*$","\\1",age)), popF, popM = `2020`)
 ][
   name %like% "Afghanistan|United Kingdom"
-][,
-  .(name, from = as.integer(gsub("^(\\d+)[-+].*$","\\1",age)), weight)
+]
+
+density_dt <- pop_dt[
+  .(
+    name, from = age,
+    weight = popF + popM
+  )
 ]
 rm(popF)
 rm(popM)
@@ -271,11 +276,18 @@ ggplot(distill_methods_dt) + aes(x = partition, y = value, color = method) +
 When we combine these different deaths-by-age with life expectancy estimates, we see these differences in estimated years of life lost. Without the necessary adjustments for both age structure and mortality shape, we typically overestimate YLLs.
 
 ```{r, figlex, echo = FALSE, cache = TRUE, out.width = "100%", fig.width = 8, fig.height = 3, dpi = 600}
-data("mxB1", package = "wpp2022")
-life_expectancy_dt <- setDT(mxB1)[
-  name %in% c("Afghanistan", "United Kingdom"),
-  .(name, age, mx = `2021`)
-][,
+data("mxF", package = "wpp2019")
+data("mxM", package = "wpp2019")
+life_expectancy_dt <- as.data.table(mxF)[,
+  .(name, age, mxF = `2020-2025`)
+][
+  as.data.table(mxM), on = c("name", "age"),
+  .(name, age, mxF, mxM = `2020-2025`)
+][
+  name %in% c("Afghanistan", "United Kingdom")
+][pop_dt, on = .(name, age), .(name, age, mx = (mxF*popF + mxM*popM)/(popF + popM))]
+
+life_expectancy_dt[,
   ax := fifelse(age == 0, 0.2, 0.5)
 ][,
   qx := fifelse(age == max(age), 1, mx / (1 + mx * (1 - ax)))
