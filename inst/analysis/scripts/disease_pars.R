@@ -12,8 +12,7 @@ require(countrycode)
 # from Levin et al https://doi.org/10.1007/s10654-020-00698-1
 ifr_opts <- list(
   SC2 = \(age_in_years) {
-    scaled <- exp(-7.56 + 0.121 * age_in_years)
-    scaled / (100 + scaled)
+    (10^(-3.27 + 0.0524 * age_in_years))/100
   }
 )
 
