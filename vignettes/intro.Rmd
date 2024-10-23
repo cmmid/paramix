@@ -24,7 +24,7 @@ suppressPackageStartupMessages({
   library(data.table)
   library(ggplot2)
   library(patchwork)
-  library(wpp2022)
+  library(wpp2019)
 })
 ```
 
@@ -81,12 +81,20 @@ Let's imagine a compartmental model with age groups [0,5), [5,20), [20,65), and 
 # our model age group cut points
 model_agelimits <- c(0, 5, 20, 65, 101)
 # get select data from World Population Prospects estimates
-data("popAge1dt", package = "wpp2022")
-density_dt <- popAge1dt[
-  name %like% "Afghanistan|United Kingdom" & year == 2021,
-  .(name, from = age, weight = pop)
+data("popF", package = "wpp2019")
+data("popM", package = "wpp2019")
+density_dt <- as.data.table(popF)[,
+  .(name, age, tmp = `2020`)
+][
+  as.data.table(popM), on = c("name", "age"),
+  .(name, age, weight = tmp + `2020`)
+][
+  name %like% "Afghanistan|United Kingdom"
+][,
+  .(name, from = as.integer(gsub("^(\\d+)[-+].*$","\\1",age)), weight)
 ]
-rm(popAge1dt)
+rm(popF)
+rm(popM)
 ```
 
 We can calculate the IFR values for each model age group, under different approaches to computing them. We'll use the package function `parameter_summary()`, which provides a convenient comparison of the parameter values for these approaches to summarisation:
@@ -115,7 +123,7 @@ plot_dt <- plot_dt[
 # duplicates
 
 pop_p <- ggplot(density_dt) + aes(from, weight) +
-  geom_bar(stat = "identity", width = 1) +
+  geom_col(width = 5, just = 1) +
   facet_grid(cols = vars(name)) +
   scale_x_continuous("Age", expand = expansion()) +
   scale_y_continuous("Population (thousands)") +
