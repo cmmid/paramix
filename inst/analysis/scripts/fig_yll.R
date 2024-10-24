@@ -25,10 +25,8 @@ int_dt[, averted_yll := i.YLL - YLL]
 int_dt[, sim_method := factor(sim_method, levels = names(model_assumption_labels), ordered = TRUE)]
 int_dt[, method := factor(method, levels = names(model_assumption_labels), ordered = TRUE)]
 
-# in this model, deaths do not affect dynamics, so the method for aggregating
-# death parameter (`method` field) is irrelevant
+# choosing to only show results when using the 'paramix' deaths
 p <- ggplot(int_dt[sim_method == 'wm_f']) + aes(
-# p <- ggplot(int_dt[sim_method == method]) + aes(
   x = method, group = intervention,
   y = averted_yll/1000, fill = intervention, shape = sim_method
 ) +
