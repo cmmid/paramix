@@ -14,6 +14,36 @@ The `paramix` package provides convenient functions to create both the correct a
 remotes::install_github("cmmid/paramix")
 ```
 
+## Demo Analysis
+
+In addition to the vignette introductory analysis, we provide a more extensive analysis pipeline, divided into stages and linked together via GNUMake. You will also need to have the R package `renv` installed.
+
+You can create a copy of this pipeline from an R console:
+
+```r
+path_to_destination <- file.path("~", "Downloads", "paramixdemo") # or wherever
+if (!dir.exists(path_to_destination)) { # if needed, create the directory
+  dir.create(path_to_destination, recursive = TRUE)
+}
+# get the analysis pipeline
+system.file("analysis", package = "paramix") |>
+  list.files(full.names = TRUE, recursive = FALSE, include.dirs = TRUE) |>
+  file.copy(
+    from = _,
+    to = path_to_destination,
+    recursive = TRUE
+  )
+# should be a bunch of TRUEs indicating the files copied successfully
+```
+
+then go to where you created the copy and run the `make` command:
+
+```bash
+~/Downloads/paramixdemo$ make
+```
+
+This should result in a fair bit of environment setup (to ensure setup for reproducibility)
+
 ## Usage
 
 Briefly, there are three steps:
