@@ -6,7 +6,7 @@
 \alias{paramix-package}
 \title{paramix: Aggregate and Disaggregate Continuous Parameters for Compartmental Models}
 \description{
-The `paramix` package provides a convenient framework for aggregating and disaggregating continuously varying parameters (for example, case fatality ratio, with age) for proper parametrization of lower-resolution compartmental models (for example, with broad age categories) and subsequent upscaling of model outputs at high resolution (for example, as needed when calculating age-sensitive measures like years-life-lost).
+A convenient framework for aggregating and disaggregating continuously varying parameters (for example, case fatality ratio, with age) for proper parametrization of lower-resolution compartmental models (for example, with broad age categories) and subsequent upscaling of model outputs to high resolution (for example, as needed when calculating age-sensitive measures like years-life-lost).
 }
 \seealso{
 Useful links:

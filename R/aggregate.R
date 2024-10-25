@@ -8,11 +8,7 @@
 #' @param ... any number of numeric vectors
 #'
 #' @return a sorted numeric vector with unique values
-#'
-#' @examples
-#' paramix:::make_partition(1:5)
-#' paramix:::make_partition(5:1, 4, 6)
-#'
+#' @keywords internal
 make_partition <- function(
   ...
 ) {

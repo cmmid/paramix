@@ -12,6 +12,24 @@ distill_summary(model_outcomes_dt, alembic_dt)
 
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
 }
+\value{
+a \code{data.table}, columns:
+\itemize{
+\item \code{partition}, the feature point corresponding to the value
+\item \code{value}, the translated \code{model_outcomes_dt$value}
+\item \code{method}, a factor with levels indicating how feature points are selected,
+and how \code{value} is weighted to those features:
+\itemize{
+\item \code{f_mid}: features at the \code{alembic_dt} outcome partitions, each with
+value corresponding to the total value of the corresponding model
+partition, divided by the number of outcome partitions in that model
+partition
+\item \code{f_mean}: ...
+\item \code{mean_f}: ...
+\item \code{wm_f}: the
+}
+}
+}
 \description{
 Implements several approaches to imputing higher resolution outcomes, then
 tables them up for convenient plotting.

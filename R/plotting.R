@@ -27,7 +27,7 @@
 #'    uses `integrate()`
 #'
 #' @examples
-#' # from Levin et al 2020 https://doi.org/10.1007/s10654-020-00698-1
+#' # COVID IFR from Levin et al 2020 https://doi.org/10.1007/s10654-020-00698-1
 #' f_param <- function(age_in_years) {
 #'   (10^(-3.27 + 0.0524 * age_in_years))/100
 #' }
@@ -115,6 +115,19 @@ utils::globalVariables(c(
 #'
 #' @inheritParams blend
 #'
+#' @return a `data.table`, columns:
+#'  - `partition`, the feature point corresponding to the value
+#'  - `value`, the translated `model_outcomes_dt$value`
+#'  - `method`, a factor with levels indicating how feature points are selected,
+#'  and how `value` is weighted to those features:
+#'    * `f_mid`: features at the `alembic_dt` outcome partitions, each with
+#'    value corresponding to the total value of the corresponding model
+#'    partition, divided by the number of outcome partitions in that model
+#'    partition
+#'    * `f_mean`: ...
+#'    * `mean_f`: ...
+#'    * `wm_f`: the
+#'
 #' @examples
 #' library(data.table)
 #' f_param <- function(age_in_years) {
@@ -174,7 +187,7 @@ distill_summary <- function(
       distill(alembic_dt, model_outcomes_dt)[, method := "wm_f"],
       "new_from", "partition"
     )
-  ))
+  )[, method := factor(method)])
 
 }
 

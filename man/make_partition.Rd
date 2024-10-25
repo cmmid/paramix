@@ -16,8 +16,4 @@ a sorted numeric vector with unique values
 Internal utility method for creating partitions, possibly from multiple
 distinct partitions. Validates inputs and potential creates open ends.
 }
-\examples{
-paramix:::make_partition(1:5)
-paramix:::make_partition(5:1, 4, 6)
-
-}
+\keyword{internal}

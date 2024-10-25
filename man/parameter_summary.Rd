@@ -55,7 +55,7 @@ Implements several approaches to computing partition-aggregated parameters,
 then tables them up for convenient plotting.
 }
 \examples{
-# from Levin et al 2020 https://doi.org/10.1007/s10654-020-00698-1
+# COVID IFR from Levin et al 2020 https://doi.org/10.1007/s10654-020-00698-1
 f_param <- function(age_in_years) {
   (10^(-3.27 + 0.0524 * age_in_years))/100
 }

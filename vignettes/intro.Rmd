@@ -1,6 +1,8 @@
 ---
 title: "Introductory Usage: `paramix`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette:
+    check_title: False
 vignette: >
   %\VignetteIndexEntry{paramix-intro}
   %\VignetteEngine{knitr::rmarkdown}
@@ -11,10 +13,6 @@ vignette: >
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
-)
-options(
-  scipen = 100000,
-  rmarkdown.html_vignette.check_title = FALSE
 )
 ```
 
