@@ -1,6 +1,6 @@
 {
   "R": {
-    "Version": "4.4.1",
+    "Version": "4.2.2",
     "Repositories": [
       {
         "Name": "CRAN",
@@ -26,12 +26,11 @@
     },
     "Matrix": {
       "Package": "Matrix",
-      "Version": "1.7-0",
+      "Version": "1.5-3",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
-        "grDevices",
         "graphics",
         "grid",
         "lattice",
@@ -39,7 +38,7 @@
         "stats",
         "utils"
       ],
-      "Hash": "1920b2f11133b12350024297d8a4ff4a"
+      "Hash": "4006dffe49958d2dd591c17e61e60591"
     },
     "R6": {
       "Package": "R6",
@@ -146,14 +145,14 @@
     },
     "data.table": {
       "Package": "data.table",
-      "Version": "1.16.2",
+      "Version": "1.15.4",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
         "R",
         "methods"
       ],
-      "Hash": "2e00b378fc3be69c865120d9f313039a"
+      "Hash": "8ee9ac56ef633d0c7cab8b2ca87d683e"
     },
     "deSolve": {
       "Package": "deSolve",
@@ -211,7 +210,7 @@
     },
     "fields": {
       "Package": "fields",
-      "Version": "16.3",
+      "Version": "16.2",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -221,7 +220,7 @@
         "spam",
         "viridisLite"
       ],
-      "Hash": "2900d13ae2ee1dcf9f9cce088103667c"
+      "Hash": "dac9b7c0f2450644021e2097a5360c12"
     },
     "generics": {
       "Package": "generics",
@@ -508,19 +507,18 @@
     },
     "paramix": {
       "Package": "paramix",
-      "Version": "0.0.1",
+      "Version": "0.0.0.9001",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "cmmid",
       "RemoteRepo": "paramix",
       "RemoteRef": "main",
-      "RemoteSha": "692b48cf1f78e6a90ef466ae0d00430a080f7a23",
+      "RemoteSha": "f5f50e2139cdf644a40f9463269c06978413dd44",
       "Requirements": [
-        "R",
         "data.table"
       ],
-      "Hash": "dd002317271792088f2e514cd409f4a6"
+      "Hash": "f97c85805577f5e692bb7ddbea81bfb3"
     },
     "patchwork": {
       "Package": "patchwork",
