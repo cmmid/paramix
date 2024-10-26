@@ -20,7 +20,7 @@ FIGEXT ?= png
 dat = $(addprefix ${DATDIR}/,$(1))
 fig = $(addprefix ${FIGDIR}/,$(patsubst %,%.${FIGEXT},$(1)))
 
-localdef: allfigs
+localdef: allfigs values
 
 ${DATDIR} ${OUTDIR} ${FIGDIR}:
 	mkdir -p $@
@@ -115,3 +115,7 @@ ${FIGDIR}/yll.png: scripts/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
 	$(call R)
 
 allfigs: $(call fig,incidence averted yll summary)
+
+values: scripts/run_numbers.R ${UTIL} ${DATDIR}/population.rds ${DATDIR}/disease_pars.rda ${OUTDIR}/incidence.rds \
+	${OUTDIR}/consolidated.rds
+	$(call R)

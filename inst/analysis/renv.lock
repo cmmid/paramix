@@ -507,18 +507,19 @@
     },
     "paramix": {
       "Package": "paramix",
-      "Version": "0.0.0.9001",
+      "Version": "0.0.1",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "cmmid",
       "RemoteRepo": "paramix",
       "RemoteRef": "main",
-      "RemoteSha": "f5f50e2139cdf644a40f9463269c06978413dd44",
+      "RemoteSha": "7d5e46f5afe942a94bd8486c5f1dc48756163261",
       "Requirements": [
+        "R",
         "data.table"
       ],
-      "Hash": "f97c85805577f5e692bb7ddbea81bfb3"
+      "Hash": "21d6a4d9c99ca8edad10d7679b3c4cdf"
     },
     "patchwork": {
       "Package": "patchwork",
