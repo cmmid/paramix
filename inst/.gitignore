@@ -1,6 +1,6 @@
-input/*
-output/*
-figure/*
+analysis/input/*
+analysis/output/*
+analysis/figure/*
 
 .Rprofile
 .DS_Store

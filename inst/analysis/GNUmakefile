@@ -54,9 +54,6 @@ ${DATDIR}/population.rds: scripts/population.R | ${RENV} ${DATDIR}
 ${DATDIR}/lex.rds: scripts/lex.R | ${RENV} ${DATDIR}
 	$(call R)
 
-${DATDIR}/odin.rda: scripts/odin.R | ${RENV} ${DATDIR}
-	$(call R)
-
 # n.b. for additional pathogens, this would need to be expanded
 ${DATDIR}/disease_pars.rda: scripts/disease_pars.R $(call dat,population.rds lex.rds)
 	$(call R)
@@ -64,12 +61,12 @@ ${DATDIR}/disease_pars.rda: scripts/disease_pars.R $(call dat,population.rds lex
 ${DATDIR}/param_%.rda: scripts/param.R $(call dat,population.rds disease_pars.rda)
 	$(call R,$(subst _, ,$*))
 
-allinputs: $(call dat,population.rds lex.rds odin.rda disease_pars.rda $(patsubst %,param_%.rda,${ALLSCN}))
+allinputs: $(call dat,population.rds lex.rds disease_pars.rda $(patsubst %,param_%.rda,${ALLSCN}))
 
 ##### OUTPUTS ##################################################################
 # simulation time series, distillations, ylls - by various methods
 
-${OUTDIR}/sim_%.rds: scripts/simulate.R $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR}
+${OUTDIR}/sim_%.rds: scripts/simulate.R $(call dat,population.rds param_%.rda) scripts/odin.R | ${OUTDIR}
 	$(call R,$(firstword $(subst _, ,$*)))
 
 ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
@@ -84,9 +81,6 @@ ${OUTDIR}/yll_%.rds: scripts/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
 	$(call R,$(firstword $(subst _, ,$*)))
 
 allylls: $(patsubst %,${OUTDIR}/yll_%.rds,${ALLSCN})
-
-# ${OUTDIR}/vaxthreshold_%.rds: $(call dat,population.rds odin.rda param_%.rda) | ${OUTDIR} scripts/yll.R ${DATDIR}/lex.rds ${OUTDIR}/distill_%.rds
-#	$(call R,$(firstword $(subst _, ,$*)))
 
 ${OUTDIR}/incidence.rds: scripts/incidence.R $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 	$(call R)

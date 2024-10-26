@@ -4,8 +4,8 @@ source('scripts/odin.R')
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
-  file.path("input", "odin.rda"),
   file.path("input", "param_GBR_FLU.rda"),
+  file.path("scripts", "odin.R"),
   "GBR",
   file.path("output", "sim_GBR_FLU.rds")
 ) else commandArgs(trailingOnly = TRUE)
@@ -16,7 +16,7 @@ pop_dt <- pop_dt[
 ]
 
 load(.args[2])
-load(.args[3])
+source(.args[3])
 
 epidemic_time_series <- function(
   vacc_cov, # 4-vector of proportion of each model age group vaccinated

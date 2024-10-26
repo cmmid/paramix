@@ -1,10 +1,6 @@
 
 require(odin)
 
-.args <- if (interactive()) c(
-  file.path("input", "odin.rda")
-) else commandArgs(trailingOnly = TRUE)
-
 sir_odin <- odin::odin({
 
   # Number of groups
@@ -104,5 +100,3 @@ epidemic_run <- function(
   )
 
 }
-
-save(sir_odin, epidemic_run, file = tail(.args, 1))
