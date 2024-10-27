@@ -1,6 +1,5 @@
 
 require(data.table)
-source('scripts/odin.R')
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
@@ -37,7 +36,7 @@ epidemic_time_series <- function(
     demography_input = demog,
     contacts = contact_mat,
     init_vaccinated = vacc_cov,
-    efficacy = rep(0.5, 4), infection_delays = infection_delays,
+    efficacy = rep(0.5, length(vacc_cov)), infection_delays = infection_delays,
     duration = length_of_epid
   ))
 
@@ -63,6 +62,25 @@ sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
     demog = demog, init_infected = c(0, 0, 1000, 0),
     length_of_epid = 20*7, disease_pars = sim_pars,
     contact_mat = cmij
+  )
+}) |> rbindlist(idcol = "intervention")
+
+I0 <- numeric(length = pop_dt[, .N])
+I0[which(pop_dt$age_group == 3)] <- 1000/sum(pop_dt$age_group == 3)
+
+simfull_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
+  dup_pop_dt <- copy(pop_dt)
+  dup_pop_dt[, vax := 0]
+  if (sum(vax_cov_opts[[opt]])) {
+    targroup <- which(vax_cov_opts[[opt]] != 0)
+    dup_pop_dt[age_group == targroup, vax := vax_cov_opts[[opt]][targroup]/.N]
+  }
+
+  epidemic_time_series(
+    vacc_cov = dup_pop_dt$vax,
+    demog = dup_pop_dt$weight * 1e3, init_infected = I0,
+    length_of_epid = 20*7, disease_pars = sim_pars,
+    contact_mat = cmijfull
   )
 }) |> rbindlist(idcol = "intervention")
 
