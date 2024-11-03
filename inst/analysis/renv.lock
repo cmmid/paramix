@@ -480,7 +480,7 @@
     },
     "odin": {
       "Package": "odin",
-      "Version": "1.2.5",
+      "Version": "1.2.6",
       "Source": "Repository",
       "Repository": "CRAN",
       "Requirements": [
@@ -493,7 +493,7 @@
         "ring",
         "withr"
       ],
-      "Hash": "28f2759ad947425cf50aa0069b5a2f57"
+      "Hash": "9f16ddb7672f4d2b4aa796cfb066b141"
     },
     "openssl": {
       "Package": "openssl",
