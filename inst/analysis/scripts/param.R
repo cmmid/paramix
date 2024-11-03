@@ -46,7 +46,7 @@ for (i in seq_along(widths)) {
 }
 
 mapping_dt <- alembic(
-  f_param = f_ifr, f_dense = pop_dt,
+  f_param = f_ifr, f_dense = pop_dt[, .(from, weight)],
   model_partition = model_agelimits,
   output_partition = pop_dt[, seq(min(from), max(from) + 1L)]
 )
@@ -54,7 +54,7 @@ mapping_dt <- alembic(
 # using `parameter_summary` instead of `blend`, because we want to compare to
 # the naive alternatives
 ifr_params <- parameter_summary(
-  f_param = f_ifr, f_dense = pop_dt,
+  f_param = f_ifr, f_dense = pop_dt[, .(from, weight)],
   model_partition = model_agelimits
 )
 
