@@ -3,10 +3,10 @@ require(data.table)
 
 .args <- if (interactive()) c(
   file.path("input", "population.rds"),
-  file.path("input", "param_GBR_FLU.rda"),
+  file.path("input", "param_AFG_FLU.rda"),
   file.path("scripts", "odin.R"),
-  "GBR",
-  file.path("output", "sim_GBR_FLU.rds")
+  "AFG",
+  file.path("output", "sim_AFG_FLU.rds")
 ) else commandArgs(trailingOnly = TRUE)
 
 pop_dt <- readRDS(.args[1])
@@ -56,24 +56,27 @@ vax_cov_opts <- list(
   vax_older = c(0, 0, 0, vax_num)
 )
 
-sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
+approx_time <- system.time(sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   epidemic_time_series(
     vacc_cov = vax_cov_opts[[opt]],
     demog = demog, init_infected = c(0, 0, 1000, 0),
     length_of_epid = 20*7, disease_pars = sim_pars,
     contact_mat = cmij
   )
-}) |> rbindlist(idcol = "intervention")
+}) |> rbindlist(idcol = "intervention"))
 
 I0 <- numeric(length = pop_dt[, .N])
 I0[which(pop_dt$age_group == 3)] <- 1000/sum(pop_dt$age_group == 3)
 
-simfull_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
+full_time <- system.time(simfull_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   dup_pop_dt <- copy(pop_dt)
   dup_pop_dt[, vax := 0]
   if (sum(vax_cov_opts[[opt]])) {
     targroup <- which(vax_cov_opts[[opt]] != 0)
-    dup_pop_dt[age_group == targroup, vax := vax_cov_opts[[opt]][targroup]/.N]
+    dup_pop_dt[
+      age_group == targroup,
+      vax := vax_cov_opts[[opt]][targroup] * weight / sum(weight)
+    ]
   }
 
   epidemic_time_series(
@@ -82,17 +85,32 @@ simfull_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
     length_of_epid = 20*7, disease_pars = sim_pars,
     contact_mat = cmijfull
   )
-}) |> rbindlist(idcol = "intervention")
+}) |> rbindlist(idcol = "intervention"))
+
+cat(
+  "approx time",
+  approx_time[3],
+  "full time",
+  full_time[3],
+  file = stderr(),
+  sep = "\n"
+)
 
 sim_dt[, model_from := model_agelimits[age_group]]
-ifr_params <- ifr_params[method != "f_val", .(model_from, method, value) ] |> unique()
+nonfull_params <- ifr_params[method != "f_val", .(model_from, method, value) ] |> unique()
 
-exp_sim_dt <- ifr_params[, unique(method)] |> setNames(nm = _) |> lapply(\(m) sim_dt) |> rbindlist(idcol = "method")
+exp_sim_dt <- nonfull_params[, unique(method)] |> setNames(nm = _) |> lapply(\(m) sim_dt) |> rbindlist(idcol = "method")
 
-exp_sim_dt[ifr_params, on = .(model_from, method), deaths := value * i.value]
+exp_sim_dt[nonfull_params, on = .(model_from, method), deaths := value * i.value]
 
 capita_dt <- data.table(age_group = seq_along(demog), capita = demog)
 
+simfull_dt[, from := age_group - 1L]
+simfull_dt[pop_dt, on = .(from), capita := weight * 1e3]
+setnames(simfull_dt, "from", "model_from")
+simfull_dt[, method := "full"]
+simfull_dt[ifr_params[method == "f_val"], on = .(model_from = x), deaths := value * i.value]
+
 exp_sim_dt[capita_dt, on = .(age_group), capita := capita]
 
-exp_sim_dt |> saveRDS(tail(.args, 1))
+rbind(exp_sim_dt, simfull_dt) |> saveRDS(tail(.args, 1))
