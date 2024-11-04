@@ -36,6 +36,27 @@ cat('HIC: [3] MEAN METHOD [4] PARAMIX', "\n")
 cat(paste0(round(100*ifr_dt[x==100 & method %in% c('f_mean','wm_f') & pathogen=='SC2' & iso3=='GBR']$value, 1), '%'), "\n")
 cat('\n')
 
+cat('SC2 65+ IFR, % INCREASE WITH PARAMIX', "\n")
+cat('LMIC:', "\n")
+cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='SC2' & iso3=='AFG']$value, 1) -
+              round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='AFG']$value, 1))/
+             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='AFG']$value, 1), '%'), "\n")
+cat('HIC:', "\n")
+cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='SC2' & iso3=='GBR']$value, 1) -
+                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='GBR']$value, 1))/
+             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='GBR']$value, 1), '%'), "\n")
+cat('\n')
+cat('FLU 65+ IFR, % INCREASE WITH PARAMIX', "\n")
+cat('LMIC:', "\n")
+cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='FLU' & iso3=='AFG']$value, 1) -
+                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='AFG']$value, 1))/
+             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='AFG']$value, 1), '%'), "\n")
+cat('HIC:', "\n")
+cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='FLU' & iso3=='GBR']$value, 1) -
+                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='GBR']$value, 1))/
+             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='GBR']$value, 1), '%'), "\n")
+cat('\n')
+
 ts_dt <- readRDS(.args[4])
 
 joinvars <- c("method", "place", "pathogen")
