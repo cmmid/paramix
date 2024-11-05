@@ -1,27 +1,102 @@
 
+
+check_not_numeric <- function(var) {
+  if (!is.numeric(var)) {
+    stop(sprintf(
+      "`%s` is not numeric", toString(var)
+    ))
+  }
+  if (any(is.na(var))) {
+    stop(sprintf(
+      "`%s` contains NA/NaN values", toString(var)
+    ))
+  }
+}
+
+check_sorted <- function(var) {
+  if (is.unsorted(var)) {
+    warning(sprintf(
+      "`%s` is not sorted: %s", deparse(substitute(var)), toString(var)
+    ))
+    return(sort(var))
+  } else {
+    return(var)
+  }
+}
+
+check_unique <- function(var) {
+  ret <- unique(var)
+  if (length(ret) != length(var)) {
+    warning(sprintf(
+      "`%s` is not unique: %s", deparse(substitute(var)), toString(var)
+    ))
+  }
+  return(ret)
+}
+
+check_bound <- function(vlen, var, res, what) {
+  wtf <- switch(
+    what, lower = utils::head, upper = utils::tail
+  )
+
+  if (vlen) {
+    if (wtf(var, 1) != wtf(res, 1)) {
+      return(sprintf(
+        "`%s` %s bound does not match mixture: %s vs %s",
+        deparse(substitute(var)), what, toString(var[1]), toString(res[1])
+      ))
+    }
+  } else invisible()
+}
+
 #' @title Create a Least-Common-Interval Partition
 #'
 #' @description
 #' Internal utility method for creating partitions, possibly from multiple
 #' distinct partitions. Validates inputs.
 #'
-#' @param ... any number of numeric vectors
+#' @param m_part the model partition
+#'
+#' @param o_part the output partition
 #'
 #' @return a sorted numeric vector with unique values
 #' @keywords internal
 make_partition <- function(
-  model_part, output_part
+  model_partition = numeric(0), output_partition = numeric(0)
 ) {
-  # want an error 1) in the parent context,
-  # 2) using variable names passed from that context
-  # (assuming they are generally just the argument names)
 
-  partition <- suppressWarnings(as.numeric(c(model_part, output_part)))
+  check_not_numeric(model_partition)
+  check_not_numeric(output_partition)
 
-  stopifnot(
-    "Must provide some partition points." = length(partition) != 0,
-    "May not provide any `NA` values for partition." = !any(is.na(partition))
+  mlen <- length(model_partition)
+  olen <- length(output_partition)
+
+  if (mlen + olen == 0L) {
+    stop("`model_partition` and `output_partition` cannot both be empty.")
+  }
+
+  model_partition <- check_sorted(model_partition)
+  model_partition <- check_unique(model_partition)
+  output_partition <- check_sorted(output_partition)
+  output_partition <- check_unique(output_partition)
+
+  res <- unique(sort(c(model_partition, output_partition)))
+
+  checked_bounds <- c(
+    check_bound(mlen, model_partition, res, "lower"),
+    check_bound(mlen, model_partition, res, "upper"),
+    check_bound(olen, output_partition, res, "lower"),
+    check_bound(olen, output_partition, res, "upper")
   )
 
-  return(unique(sort(partition)))
+  if (!is.null(checked_bounds)) {
+    checked_bounds <- c(
+      "Partition boundaries must match. If these partitions are correct, for example if the output partitions drop results from the total simulated population, consider supplying a dummy partition and then discarding it.",
+      checked_bounds
+    )
+    stop(paste(checked_bounds, collapse = "\n\t"))
+  }
+
+
+  return(res)
 }

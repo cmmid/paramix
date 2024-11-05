@@ -13,7 +13,7 @@ utils::globalVariables(c(
 #'
 #' @return a function
 #' @keywords internal
-to_function <- function(x, interp_opts) {
+to_function <- function(x, interp_opts, upperlimit) {
   if (is.function(x)) {
     return(x)
   } else {
