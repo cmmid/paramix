@@ -1,27 +1,7 @@
 
-#' @title Create a Least-Common-Interval Partition
-#'
-#' @description
-#' Internal utility method for creating partitions, possibly from multiple
-#' distinct partitions. Validates inputs and potential creates open ends.
-#'
-#' @param ... any number of numeric vectors
-#'
-#' @return a sorted numeric vector with unique values
-#' @keywords internal
-make_partition <- function(
-  ...
-) {
-  partition <- suppressWarnings(as.numeric(c(...)))
-
-  stopifnot(
-    "Must provide some partition points." = length(partition) != 0,
-    "May not provide any `NA` values for partition." = !any(is.na(partition))
-  )
-
-  return(unique(sort(partition)))
-}
-
+utils::globalVariables(c(
+  "weight", "density", "from", "model_from", "model_fraction"
+))
 
 #' @title Internal Conversion of Data to Function
 #'
@@ -49,13 +29,111 @@ to_function <- function(x, interp_opts) {
 #'
 #' @param f_param a function; the parameter function, varying with the aggregate
 #'
-#' @param f_dense a function; the density function, varying with the aggregate
+#' @param f_pop a function; the density function, varying with the aggregate
 #'
 #' @return a new function, f(x) = f_param(x)*f_density(x)
 #'
 #' @keywords internal
-make_weight <- function(f_param, f_dense) {
-  return(function(x) f_param(x) * f_dense(x))
+make_weight <- function(f_param, f_pop) {
+  return(function(x) f_param(x) * f_pop(x))
+}
+
+#' @title Create the Blending and Distilling Object
+#'
+#' @param f_param a function, `f(x)` which transforms the feature (e.g. age),
+#' to yield the parameter values. Alternatively, a `data.frame` where the first
+#' column is the feature and the second is the parameter; see
+#' [xy.coords()] for details. If the latter, combined with `pars_interp_opts`,
+#' and defaulting to spline interpolation.
+#'
+#' @param f_pop like `f_param`, either a density function (though it does
+#' not have to integrate to 1 like a pdf) or a `data.frame` of values. If the
+#' latter, it is treated as a series of populations within intervals, and
+#' then interpolated with `pop_interp_opts` to create a density function.
+#'
+#' @param model_partition a numeric vector of cut points, which define the
+#' partitioning that will be used in the model
+#'
+#' @param output_partition the partition of the underlying feature
+#'
+#' @param pars_interp_opts a list, minimally with an element `fun`,
+#' corresponding to an interpolation function. Defaults to [splinefun()]
+#' "natural" interpolation.
+#'
+#' @param pop_interp_opts ibid, but for density. Defaults to [approxfun()]
+#' "constant" interpolation.
+#'
+#' @return a `data.table` with columns `model_part`, `out_part`, `weight` and
+#' `relpop`. The first two columns identify which partitions, for both the model
+#' and output, the other values are associated with; the combination of
+#' `model_part` and `out_part` forms a unique identifier, but individually they
+#' may appear multiple times. which maps fractions of the original model partitions
+#' to the desired partitions, according to underlying relative outcome rates and
+#' densities
+#'
+#' @examples
+#' ifr_levin <- function(age_in_years) {
+#'   (10^(-3.27 + 0.0524 * age_in_years))/100
+#' }
+#' age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
+#' age_pyramid <- data.frame(
+#'   from = 0:100, weight = ifelse(0:100 < 65, 1, .99^(0:100-64))
+#' ) # flat age distribution, then 1% annual deaths
+#' ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
+#'
+#' @importFrom utils head tail
+#' @importFrom stats integrate
+#' @import data.table
+#' @export
+alembic <- function(
+    f_param,
+    f_pop,
+    model_partition,
+    output_partition,
+    pars_interp_opts = list(
+      fun = stats::splinefun, method = "natural"
+    ),
+    pop_interp_opts = list(
+      fun = stats::approxfun, method = "constant",
+      yleft = 0, yright = 0
+    )
+) {
+
+  overall_partition <- make_partition(model_partition, output_partition)
+
+  lowers <- head(overall_partition, -1)
+  uppers <- tail(overall_partition, -1)
+
+  f_param <- to_function(f_param, pars_interp_opts)
+  f_pop <- to_function(f_pop, pop_interp_opts)
+
+  f <- make_weight(f_param, f_pop)
+
+  ret <- data.table(from = lowers)[, {
+    model_part <- findInterval(from, model_partition)
+    out_part <- findInterval(from, output_partition)
+    weight <- numeric(length(from))
+    relpop <- numeric(length(from))
+    for (i in seq_along(lowers)) {
+      weight[i] <- integrate(
+        f, lowers[i], uppers[i], subdivisions = 1000L
+      )$value
+      relpop[i] <- integrate(
+        f_pop, lowers[i], uppers[i], subdivisions = 1000L
+      )$value
+    }
+    .(
+      model_from = model_partition[model_part],
+      new_from = output_partition[out_part],
+      weight = weight, relpop = relpop
+    )
+  }]
+
+  setattr(ret, "f_param", f_param)
+  setattr(ret, "f_pop", f_pop)
+
+  return(ret)
+
 }
 
 #' @title Blend Parameters
@@ -111,103 +189,6 @@ blend <- function(
   return(alembic_dt[, .(value = sum(weight) / sum(density)), by = model_from])
 }
 
-utils::globalVariables(c("weight", "density", "model_from"))
-
-#' @title Create the Blending and Distilling Object
-#'
-#' @param f_param a function, `f(x)` which transforms the feature (e.g. age),
-#' and yields the parameter value. Alternatively, a `data.frame` where the first
-#' column is the feature (x) and the second is the parameter (y); see
-#' [xy.coords()] for details. If the latter, combined with `pars_interp_opts`,
-#' and defaulting to spline interpolation.
-#'
-#' @param f_dense like `f_param`, either a density function (though it does
-#' not have to integrate to 1 like a pdf) or a `data.frame` of values. If the
-#' latter, combined with `dens_interp_opts` and defaulting to constant density
-#' from each x to the next.
-#'
-#' @param model_partition a numeric vector of cut points, which define the
-#' partitioning that will be used in the model
-#'
-#' @param output_partition the partition of the underlying feature
-#'
-#' @param pars_interp_opts a list, minimally with an element `fun`,
-#' corresponding to an interpolation function. Defaults to [splinefun()]
-#' "natural" interpolation
-#'
-#' @param dens_interp_opts ibid, but for density. Defaults to [approxfun()]
-#' "constant" interpolation
-#'
-#' @return a `data.frame` which maps fractions of the original model partitions
-#' to the desired partitions, according to underlying relative outcome rates and
-#' densities
-#'
-#' @examples
-#' ifr_levin <- function(age_in_years) {
-#'   (10^(-3.27 + 0.0524 * age_in_years))/100
-#' }
-#' age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
-#' age_pyramid <- data.frame(
-#'   from = 0:100, weight = ifelse(0:100 < 65, 1, .99^(0:100-64))
-#' ) # flat age distribution, then 1% annual deaths
-#' ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
-#'
-#' @importFrom utils head tail
-#' @importFrom stats integrate
-#' @import data.table
-#' @export
-alembic <- function(
-  f_param,
-  f_dense,
-  model_partition,
-  output_partition,
-  pars_interp_opts = list(
-    fun = stats::splinefun, method = "natural"
-  ),
-  dens_interp_opts = list(
-    fun = stats::approxfun, method = "constant",
-    yleft = 0, yright = 0
-  )
-) {
-
-  overall_partition <- make_partition(model_partition, output_partition)
-
-  lowers <- head(overall_partition, -1)
-  uppers <- tail(overall_partition, -1)
-
-  f_param <- to_function(f_param, pars_interp_opts)
-  f_dense <- to_function(f_dense, dens_interp_opts)
-
-  f <- make_weight(f_param, f_dense)
-
-  ret <- data.table(from = lowers)[, {
-    model_part <- findInterval(from, model_partition)
-    new_part <- findInterval(from, output_partition)
-    weight <- numeric(length(from))
-    dense <- numeric(length(from))
-    for (i in seq_along(weight)) {
-      weight[i] <- integrate(
-        f, lowers[i], uppers[i], subdivisions = 1000L
-      )$value
-      dense[i] <- integrate(
-        f_dense, lowers[i], uppers[i], subdivisions = 1000L
-      )$value
-    }
-    .(
-      model_from = model_partition[model_part],
-      new_from = output_partition[new_part], weight = weight, density = dense
-    )
-  }]
-
-  setattr(ret, "f_param", f_param)
-  setattr(ret, "f_dense", f_dense)
-
-  return(ret)
-
-}
-
-utils::globalVariables(c("from"))
-
 #' @title Distill Outcomes
 #'
 #' @description
@@ -250,5 +231,3 @@ distill <- function(
   ])
 
 }
-
-utils::globalVariables(c("weight", "model_from", "model_fraction"))
