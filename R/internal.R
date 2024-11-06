@@ -128,7 +128,7 @@ to_function <- function(x, lb, ub, interp_opts) {
     }
     return(x)
   } else if (is.data.frame(x)) {
-    callargs <- interp_opts
+    callargs <- do.call(interpolation_opts, interp_opts)
     callfun <- interp_opts$fun
     callargs$fun <- NULL
     callargs$x <- x

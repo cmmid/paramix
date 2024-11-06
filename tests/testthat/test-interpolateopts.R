@@ -38,3 +38,10 @@ test_that("`interpolate_opts` works for valid inputs.", {
   expect_true(res$`.usekind`)
 
 })
+
+test_that("`interpolate_opts` works iteratively", {
+  complexfun <- function(x, other) print(x, other)
+  otherval <- 5
+  res <- interpolate_opts(complexfun, other = otherval)
+  res2 <- do.call(interpolate_opts, res)
+})
