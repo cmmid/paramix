@@ -13,15 +13,10 @@ parameter_summary(
 }
 \arguments{
 \item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
-and yields the parameter value. Alternatively, a \code{data.frame} where the first
-column is the feature (x) and the second is the parameter (y); see
+to yield the parameter values. Alternatively, a \code{data.frame} where the first
+column is the feature and the second is the parameter; see
 \code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
 and defaulting to spline interpolation.}
-
-\item{f_dense}{like \code{f_param}, either a density function (though it does
-not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
-latter, combined with \code{dens_interp_opts} and defaulting to constant density
-from each x to the next.}
 
 \item{model_partition}{a numeric vector of cut points, which define the
 partitioning that will be used in the model}

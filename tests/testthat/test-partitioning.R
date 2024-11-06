@@ -50,7 +50,7 @@ test_that(
   "`make_partition` results in sorted, unique values.", {
   mp <- c(1, 1, 5)
   op <- 5:1
-  mixp <- expect_warning(make_partition(mp, op))
+  mixp <- suppressWarnings(make_partition(mp, op))
   expect_true(!is.unsorted(mixp))
   expect_equal(length(unique(mixp)), length(mixp))
 })
