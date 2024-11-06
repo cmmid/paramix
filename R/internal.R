@@ -100,3 +100,29 @@ make_partition <- function(
 
   return(res)
 }
+
+#' @title Internal Conversion of Data to Function
+#'
+#' @param x a function or the single argument version of `x` in
+#' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs)
+#'
+#' @param interp_opts if `x` is function, ignored. Otherwise,
+#' an interpolating function and its arguments.
+#'
+#' @return a function
+#' @keywords internal
+to_function <- function(x, interp_opts, lb, ub) {
+  if (is.function(x)) {
+    bcheck <- c(x(lb), x(ub))
+    if (any(is.na(bcheck))) {
+      stop(sprintf())
+    }
+    return(x)
+  } else {
+    callargs <- interp_opts
+    callfun <- interp_opts$fun
+    callargs$fun <- NULL
+    callargs$x <- x
+    return(do.call(callfun, args = callargs))
+  }
+}
