@@ -3,28 +3,6 @@ utils::globalVariables(c(
   "weight", "density", "from", "model_from", "model_fraction"
 ))
 
-#' @title Internal Conversion of Data to Function
-#'
-#' @param x a function or the single argument version of `x` in
-#' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs)
-#'
-#' @param interp_opts if `x` is function, ignored. Otherwise,
-#' an interpolating function and its arguments.
-#'
-#' @return a function
-#' @keywords internal
-to_function <- function(x, interp_opts, upperlimit) {
-  if (is.function(x)) {
-    return(x)
-  } else {
-    callargs <- interp_opts
-    callfun <- interp_opts$fun
-    callargs$fun <- NULL
-    callargs$x <- x
-    return(do.call(callfun, args = callargs))
-  }
-}
-
 #' @title Compose Parameter & Density Functions
 #'
 #' @param f_param a function; the parameter function, varying with the aggregate
