@@ -9,9 +9,10 @@ alembic(
   f_pop,
   model_partition,
   output_partition,
-  pars_interp_opts = list(fun = stats::splinefun, method = "natural"),
-  pop_interp_opts = list(fun = stats::approxfun, method = "constant", yleft = 0, yright =
-    0)
+  pars_interp_opts = interpolate_opts(fun = stats::splinefun, kind = "point", method =
+    "natural"),
+  pop_interp_opts = interpolate_opts(fun = stats::approxfun, kind = "integral", method =
+    "constant", yleft = 0, yright = 0)
 )
 }
 \arguments{

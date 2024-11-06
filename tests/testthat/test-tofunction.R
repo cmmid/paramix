@@ -18,5 +18,16 @@
 #'  - return value is sorted, unique
 
 test_that("`to_function` errors for invalid arguments.", {
-  expect_error()
+  notfunordf <- 5
+  junkopts <- list(a = 5)
+  # just not a function or data.frame
+  expect_error(to_function(notfunordf, 1, 10, interpolate_opts(function(x) x)))
+  # if a function, error if undefined at lb or ub
+  expect_error(to_function(data.frame(x = 0:10, y), 1, 10, interpolate_opts(function(x) x)))
+  # if a data.frame, not covering lb, ub
+  # if a data.frame, junk interpolate_opts
+})
+
+test_that("`to_function` yields a function", {
+
 })
