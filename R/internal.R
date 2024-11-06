@@ -104,25 +104,52 @@ make_partition <- function(
 #' @title Internal Conversion of Data to Function
 #'
 #' @param x a function or the single argument version of `x` in
-#' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs)
+#' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs). Pass through
+#' from user input, must be checked
+#'
+#' @param lb numeric scalar, the partition lower bound; not checked, result of
+#' [make_partition()].
+#'
+#' @param ub numeric scalar, the partition upper bound; not checked, result of
+#' [make_partition()].
 #'
 #' @param interp_opts if `x` is function, ignored. Otherwise,
 #' an interpolating function and its arguments.
 #'
 #' @return a function
 #' @keywords internal
-to_function <- function(x, interp_opts, lb, ub) {
+to_function <- function(x, lb, ub, interp_opts) {
   if (is.function(x)) {
     bcheck <- c(x(lb), x(ub))
     if (any(is.na(bcheck))) {
-      stop(sprintf())
+      stop(c(sprintf(
+        "The (lower, upper) bounds of the mixing partition evaluate to (%s, %s); the function %s must be defined on the whole partition.", deparse(substitute(x)), toString(bcheck[1]), toString(bcheck[2])
+      )))
     }
     return(x)
-  } else {
+  } else if (is.data.frame(x)) {
     callargs <- interp_opts
     callfun <- interp_opts$fun
     callargs$fun <- NULL
     callargs$x <- x
     return(do.call(callfun, args = callargs))
+  } else {
+    stop(sprintf("%s must be a function or data.frame; received %s.", deparse(substitute(x)), class(x)))
   }
+}
+
+#' @title Compose Parameter & Density Functions
+#'
+#' @description
+#' Purely internal, called after `to_function`, so no direct user arguments.#'
+#'
+#' @param f_param a function; the parameter function, varying with the aggregate
+#'
+#' @param f_pop a function; the density function, varying with the aggregate
+#'
+#' @return a new function, f(x) = f_param(x)*f_pop(x)
+#'
+#' @keywords internal
+make_weight <- function(f_param, f_pop) {
+  return(function(x) f_param(x) * f_pop(x))
 }

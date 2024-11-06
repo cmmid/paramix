@@ -6,25 +6,25 @@
 \usage{
 alembic(
   f_param,
-  f_dense,
+  f_pop,
   model_partition,
   output_partition,
   pars_interp_opts = list(fun = stats::splinefun, method = "natural"),
-  dens_interp_opts = list(fun = stats::approxfun, method = "constant", yleft = 0, yright
-    = 0)
+  pop_interp_opts = list(fun = stats::approxfun, method = "constant", yleft = 0, yright =
+    0)
 )
 }
 \arguments{
 \item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
-and yields the parameter value. Alternatively, a \code{data.frame} where the first
-column is the feature (x) and the second is the parameter (y); see
+to yield the parameter values. Alternatively, a \code{data.frame} where the first
+column is the feature and the second is the parameter; see
 \code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
 and defaulting to spline interpolation.}
 
-\item{f_dense}{like \code{f_param}, either a density function (though it does
+\item{f_pop}{like \code{f_param}, either a density function (though it does
 not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
-latter, combined with \code{dens_interp_opts} and defaulting to constant density
-from each x to the next.}
+latter, it is treated as a series of populations within intervals, and
+then interpolated with \code{pop_interp_opts} to create a density function.}
 
 \item{model_partition}{a numeric vector of cut points, which define the
 partitioning that will be used in the model}
@@ -33,13 +33,17 @@ partitioning that will be used in the model}
 
 \item{pars_interp_opts}{a list, minimally with an element \code{fun},
 corresponding to an interpolation function. Defaults to \code{\link[=splinefun]{splinefun()}}
-"natural" interpolation}
+"natural" interpolation.}
 
-\item{dens_interp_opts}{ibid, but for density. Defaults to \code{\link[=approxfun]{approxfun()}}
-"constant" interpolation}
+\item{pop_interp_opts}{ibid, but for density. Defaults to \code{\link[=approxfun]{approxfun()}}
+"constant" interpolation.}
 }
 \value{
-a \code{data.frame} which maps fractions of the original model partitions
+a \code{data.table} with columns \code{model_part}, \code{out_part}, \code{weight} and
+\code{relpop}. The first two columns identify which partitions, for both the model
+and output, the other values are associated with; the combination of
+\code{model_part} and \code{out_part} forms a unique identifier, but individually they
+may appear multiple times. which maps fractions of the original model partitions
 to the desired partitions, according to underlying relative outcome rates and
 densities
 }

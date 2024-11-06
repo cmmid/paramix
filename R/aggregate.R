@@ -3,19 +3,6 @@ utils::globalVariables(c(
   "weight", "density", "from", "model_from", "model_fraction"
 ))
 
-#' @title Compose Parameter & Density Functions
-#'
-#' @param f_param a function; the parameter function, varying with the aggregate
-#'
-#' @param f_pop a function; the density function, varying with the aggregate
-#'
-#' @return a new function, f(x) = f_param(x)*f_density(x)
-#'
-#' @keywords internal
-make_weight <- function(f_param, f_pop) {
-  return(function(x) f_param(x) * f_pop(x))
-}
-
 #' @title Create the Blending and Distilling Object
 #'
 #' @param f_param a function, `f(x)` which transforms the feature (e.g. age),
@@ -68,12 +55,13 @@ alembic <- function(
     f_pop,
     model_partition,
     output_partition,
-    pars_interp_opts = list(
-      fun = stats::splinefun, method = "natural"
+    pars_interp_opts = interpolate_opts(
+      fun = stats::splinefun, kind = "point",
+      method = "natural"
     ),
-    pop_interp_opts = list(
-      fun = stats::approxfun, method = "constant",
-      yleft = 0, yright = 0
+    pop_interp_opts = interpolate_opts(
+      fun = stats::approxfun, kind = "integral",
+      method = "constant", yleft = 0, yright = 0
     )
 ) {
 
