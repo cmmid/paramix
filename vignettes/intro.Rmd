@@ -24,6 +24,17 @@ suppressPackageStartupMessages({
   library(patchwork)
   library(wpp2019)
 })
+
+pretty_kable <- function(dt, lims, var) {
+  tbl2 <- as.data.frame(
+    dcast.data.table(dt, model_partition ~ name, value.var = var)
+  )
+  tbl2$model_partition <- NULL
+  row.names(tbl2) <- paste(
+    head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
+  )
+  knitr::kable(tbl2)
+}
 ```
 
 The `paramix` package provides translation of parameters for use in compartmental models. Imagine you have compartments discretising some feature -- for example, converting ages into age categories -- but a process thats depends on that feature -- for example, infection fatality ratio. How do you get the right aggregate parameter for each of the compartments? And once you get outcomes for your stratified compartments, is there anyway to impute their higher-resolution distribution?
@@ -93,9 +104,9 @@ pop_dt <- as.data.table(popF)[,
 
 density_dt <- pop_dt[,
   .(
-    name, from = age,
-    weight = popF + popM
-  )
+    from = c(age, max(age)+1),
+    weight = c(popF + popM, 0)
+  ), by = name
 ]
 
 rm(popF)
@@ -107,7 +118,7 @@ We can calculate the IFR values for each model age group, under different approa
 ```{r ifrplotsetup, cache=TRUE}
 plot_dt <- density_dt[, { # compute parameters for each country of interest
   paramix::parameter_summary(
-    f_param = ifr_levin, f_dense = .SD, model_agelimits
+    f_param = ifr_levin, f_pop = .SD, model_agelimits
   )
 }, by = name]
 ```
@@ -115,7 +126,7 @@ plot_dt <- density_dt[, { # compute parameters for each country of interest
 And plotting these different blends:
 
 ```{r, ifrfig, echo = FALSE, cache = TRUE, out.width = "100%", dpi = 600, fig.width = 8, fig.height = 5}
-plot_dt <- plot_dt[
+sub_plot_dt <- plot_dt[
   name == "Afghanistan" | method == "wm_f"
 ][,
   method := factor(fifelse(
@@ -127,34 +138,34 @@ plot_dt <- plot_dt[
 # with the exception of wm_f, these are independent of density, so we can drop
 # duplicates
 
-pop_p <- ggplot(density_dt) + aes(from, weight) +
+pop_p <- ggplot(density_dt[from != max(from)]) + aes(from, weight) +
   geom_col(width = 5, just = 1) +
   facet_grid(cols = vars(name)) +
   scale_x_continuous("Age", expand = expansion()) +
   scale_y_continuous("Population (thousands)") +
   theme_minimal() + theme(panel.spacing.x = unit(1.5, "line"))
 
-ifr_p <- ggplot(plot_dt) + aes(x = x, color = method, y = value) +
+ifr_p <- ggplot(sub_plot_dt[x <= density_dt[, max(from)-1]]) + aes(x = x, color = method, y = value) +
   geom_line(data = \(dt) dt[method == "f_val"], lwd = 0.8, lty = "dotted") +
   geom_step(data = \(dt) dt[method != "f_val"]) +
   scale_color_discrete(
     NULL,
-    breaks = plot_dt[, value[.N], by = method][order(-V1), method],
+    breaks = sub_plot_dt[, value[.N], by = method][order(-V1), method],
     labels = c(
       f_val = "f(age)", f_mid = "f(mid(Age))",
       mean_f = "E[f(age)]", f_mean = "f(E[age])",
       af_wm_f = "AF-weighted E[f(age)]", uk_wm_f = "UK-weighted E[f(age)]"
     )
   ) +
-  scale_y_continuous("Infection-fatality ratio", expand = expansion()) +
+  scale_y_log10("Infection-fatality ratio", expand = expansion()) +
   scale_x_continuous("Age", breaks = 10 * (0:10), expand = expansion()) +
   theme_minimal() +
   theme(
-    legend.position = "inside", legend.position.inside = c(0.1, 1),
+    legend.position = "inside", legend.position.inside = c(0.025, 1),
     legend.justification.inside = c(0, 1)
   )
 
-(pop_p / ifr_p) & theme(text = element_text(size = 10))
+(pop_p / ifr_p) + plot_layout(heights = c(1, 2)) & theme(text = element_text(size = 10))
 ```
 
 Clearly, these different approaches result in different mortality outcomes for otherwise identical infection patterns. 
@@ -173,9 +184,9 @@ Revisiting our previous example, the properly age-weighted IFRs look like:
 # setup the model to outcome mapping using `alembic`s
 mapping_dt <- density_dt[,
   paramix::alembic(
-    f_param = ifr_levin, f_dense = .SD,
+    f_param = ifr_levin, f_pop = .SD,
     model_partition = model_agelimits,
-    output_partition = seq(min(from), max(from) + 1L, by = 5L)
+    output_partition = { res <- seq(min(from), max(from), by = 5L); res[length(res)] <- tail(model_agelimits, 1); res } 
   ),
   by = name
 ]
@@ -184,7 +195,7 @@ params <- mapping_dt[, paramix::blend(.SD), by = name]
 ```
 
 ```{r paramstbl, echo = FALSE}
-params |> dcast(model_from ~ name) |> knitr::kable()
+pretty_kable(params, model_agelimits, "value")
 ```
 
 These parameters are now weighted correctly for use in a model with those age groups and underlying populations. Once you run that model, you might want to disaggregate an outcome, such as for example converting deaths into years of life lost.
@@ -210,27 +221,20 @@ For demonstration purposes, let's assume that one million infections occur propo
 
 ```{r modeldeaths}
 model_density_dt <- density_dt[, .(
-  model_from = model_agelimits[findInterval(from, model_agelimits)],
+  model_partition = model_agelimits[findInterval(from, model_agelimits)],
   weight
-), by = name][, .(weight = sum(weight)), by = .(name, model_from)][,
+), by = name][, .(weight = sum(weight)), by = .(name, model_partition)][,
   weight := weight / sum(weight), by = name
 ]
 model_deaths_dt <- model_density_dt[
-  params, on = .(name, model_from)
+  params, on = .(name, model_partition)
 ][,
-  .(name, model_from, deaths = weight * 1e6 * value)
+  .(name, model_partition, deaths = weight * 1e6 * value)
 ]
 ```
 
 ```{r deathtbl, echo = FALSE}
-tbl2 <- as.data.frame(
-  dcast.data.table(model_deaths_dt, model_from ~ name, value.var = "deaths")
-)
-tbl2$model_from <- NULL
-row.names(tbl2) <- paste(
-  head(model_agelimits, -1), tail(model_agelimits, -1) - 1L, sep = " - "
-)
-knitr::kable(tbl2)
+pretty_kable(model_deaths_dt, model_agelimits, "deaths")
 ```
 
 How would these translate into age-specific deaths, based on these different calculation methods? For convenience, `paramix` can compute all approaches mentioned above for comparison:
@@ -238,8 +242,8 @@ How would these translate into age-specific deaths, based on these different cal
 ```{r alembicsetup}
 distill_methods_dt <- model_deaths_dt[,
   paramix::distill_summary(
-    .SD[, .(model_from, value = deaths)],
-    mapping_dt[name == .BY]
+    mapping_dt[name == .BY],
+    .SD[, .(model_partition, value = deaths)]
   ),
   by = name
 ]

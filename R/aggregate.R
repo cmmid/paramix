@@ -1,6 +1,6 @@
 
 utils::globalVariables(c(
-  "weight", "density", "from", "model_from", "model_fraction"
+  "weight", "relpop", "model_partition", "output_partition", "model_fraction"
 ))
 
 #' @title Create the Blending and Distilling Object
@@ -28,13 +28,12 @@ utils::globalVariables(c(
 #' @param pop_interp_opts ibid, but for density. Defaults to [approxfun()]
 #' "constant" interpolation.
 #'
-#' @return a `data.table` with columns `model_part`, `out_part`, `weight` and
-#' `relpop`. The first two columns identify which partitions, for both the model
+#' @return a `data.table` with columns `model_partition`, `output_partition`, `weight` and
+#' `relpop`. The first two columns identify partition lower bounds, for both the model
 #' and output, the other values are associated with; the combination of
-#' `model_part` and `out_part` forms a unique identifier, but individually they
-#' may appear multiple times. which maps fractions of the original model partitions
-#' to the desired partitions, according to underlying relative outcome rates and
-#' densities
+#' `model_partition` and `output_partition` forms a unique identifier, but individually they
+#' may appear multiple times. Generally, this object is only useful as an input
+#' to the [blend()] and [distill()] tools.
 #'
 #' @examples
 #' ifr_levin <- function(age_in_years) {
@@ -70,30 +69,30 @@ alembic <- function(
   lowers <- head(overall_partition, -1)
   uppers <- tail(overall_partition, -1)
 
-  f_param <- to_function(f_param, pars_interp_opts)
-  f_pop <- to_function(f_pop, pop_interp_opts)
+  f_param <- to_function(f_param, range(overall_partition), pars_interp_opts)
+  f_pop <- to_function(f_pop, range(overall_partition), pop_interp_opts)
 
   f <- make_weight(f_param, f_pop)
 
-  ret <- data.table(from = lowers)[, {
-    model_part <- findInterval(from, model_partition)
-    out_part <- findInterval(from, output_partition)
-    weight <- numeric(length(from))
-    relpop <- numeric(length(from))
-    for (i in seq_along(lowers)) {
-      weight[i] <- integrate(
-        f, lowers[i], uppers[i], subdivisions = 1000L
-      )$value
-      relpop[i] <- integrate(
-        f_pop, lowers[i], uppers[i], subdivisions = 1000L
-      )$value
-    }
-    .(
-      model_from = model_partition[model_part],
-      new_from = output_partition[out_part],
-      weight = weight, relpop = relpop
-    )
-  }]
+  model_part <- findInterval(lowers, model_partition)
+  out_part <- findInterval(lowers, output_partition)
+  weight <- numeric(length(lowers))
+  relpop <- numeric(length(lowers))
+  for (i in seq_along(lowers)) {
+    weight[i] <- integrate(
+      f, lowers[i], uppers[i], subdivisions = 1000L
+    )$value
+    relpop[i] <- integrate(
+      f_pop, lowers[i], uppers[i], subdivisions = 1000L
+    )$value
+  }
+
+
+  ret <- data.table(
+    model_partition = model_partition[model_part],
+    output_partition = output_partition[out_part],
+    weight = weight, relpop = relpop
+  )
 
   setattr(ret, "f_param", f_param)
   setattr(ret, "f_pop", f_pop)
@@ -109,7 +108,7 @@ alembic <- function(
 #'
 #' @param alembic_dt an [alembic()] return value
 #'
-#' @return a `data.table` of with two columns: `model_from` (partition lower
+#' @return a `data.table` of with two columns: `model_partition` (partition lower
 #' bounds) and `value` (parameter values for those partitions)
 #'
 #' @examples
@@ -152,7 +151,7 @@ alembic <- function(
 blend <- function(
   alembic_dt
 ) {
-  return(alembic_dt[, .(value = sum(weight) / sum(density)), by = model_from])
+  return(alembic_dt[, .(value = sum(weight) / sum(relpop)), by = model_partition])
 }
 
 #' @title Distill Outcomes
@@ -168,32 +167,66 @@ blend <- function(
 #' `from` or `model_from` and a column `value` (other columns will be silently
 #' ignored)
 #'
+#' @param groupcol a string, the name of the outcome model group column. The
+#' `outcomes_dt[[groupcol]]` column must match the `model_partition` lower
+#' bounds, as provided when constructing the `alembic_dt` with [alembic()].
+#'
 #' @details
 #' When the `value` column is re-calculated, note that it will aggregate all
-#' matching `from` / `model_from` rows in `outcomes_dt`. If you need to group
+#' rows with matching `groupcol` entries in `outcomes_dt`. If you need to group
 #' by other features in your input data (e.g. if you need to distill outcomes
-#' across multiple simulation outputs), that has to be done outside of any call
-#' to `distill()`.
+#' across multiple simulation outputs or at multiple time points), that has to
+#' be done by external grouping then calling `distill()`.
 #'
 #'
-#' @return a `data.frame`, with `new_from` and recalculated `value` column
+#' @return a `data.frame`, with `output_partition` and recalculated `value` column
 #'
 #' @import data.table
 #' @export
+#' @examplesIf require(data.table)
+#'
+#' ifr_levin <- function(age_in_years) {
+#'   (10^(-3.27 + 0.0524 * age_in_years))/100
+#' }
+#' age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
+#' age_pyramid <- data.table(
+#'   from = 0:99, weight = ifelse(0:99 < 65, 1, .99^(0:99-64))
+#' ) # flat age distribution, then 1% annual deaths
+#' alembic_dt <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
+#'
+#' results <- data.table(model_partition = head(age_limits, -1))[, value := 10]
+#' distill(alembic_dt, results)
 distill <- function(
-  alembic_dt, outcomes_dt
+  alembic_dt, outcomes_dt, groupcol = names(outcomes_dt)[1]
 ) {
 
-  setnames(setDT(outcomes_dt), "from", "model_from", skip_absent = TRUE)
+  setnames(setDT(outcomes_dt), groupcol, "model_partition")
+  uniqgroups <- outcomes_dt[, unique(model_partition)]
+  uniqalemb <- alembic_dt[, unique(model_partition)]
+
+  if (length(setdiff(uniqgroups, uniqalemb))) {
+    stop(sprintf(
+      "`outcomes_dt[[%s]] has groups not present in `alembic_dt$model_partition`: %s",
+      groupcol,
+      toString(setdiff(uniqgroups, uniqalemb))
+    ))
+  }
+  if (length(setdiff(uniqalemb, uniqgroups))) {
+    warning(sprintf(
+      "`outcomes_dt[[%s]] does not cover the groups present in `alembic_dt$model_partition`: missing %s",
+      groupcol,
+      toString(setdiff(uniqalemb, uniqgroups))
+    ))
+  }
 
   mapping <- alembic_dt[, .(
-    new_from, model_fraction = weight / sum(weight)
-    ), by = model_from
+    output_partition, model_fraction = weight / sum(weight)
+    ), by = model_partition
   ]
 
-  return(outcomes_dt[mapping, on = .(model_from)][,
+  return(outcomes_dt[mapping, on = .(model_partition)][,
     .(value = sum(value * model_fraction)),
-    by = new_from
+    by = output_partition
   ])
 
 }

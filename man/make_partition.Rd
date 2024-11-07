@@ -7,9 +7,9 @@
 make_partition(model_partition = numeric(0), output_partition = numeric(0))
 }
 \arguments{
-\item{m_part}{the model partition}
+\item{model_partition}{the model partition}
 
-\item{o_part}{the output partition}
+\item{output_partition}{the output partition}
 }
 \value{
 a sorted numeric vector with unique values

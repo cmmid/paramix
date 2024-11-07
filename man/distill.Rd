@@ -4,7 +4,7 @@
 \alias{distill}
 \title{Distill Outcomes}
 \usage{
-distill(alembic_dt, outcomes_dt)
+distill(alembic_dt, outcomes_dt, groupcol = names(outcomes_dt)[1])
 }
 \arguments{
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
@@ -12,9 +12,13 @@ distill(alembic_dt, outcomes_dt)
 \item{outcomes_dt}{a long-format \code{data.frame} with a column either named
 \code{from} or \code{model_from} and a column \code{value} (other columns will be silently
 ignored)}
+
+\item{groupcol}{a string, the name of the outcome model group column. The
+\code{outcomes_dt[[groupcol]]} column must match the \code{model_partition} lower
+bounds, as provided when constructing the \code{alembic_dt} with \code{\link[=alembic]{alembic()}}.}
 }
 \value{
-a \code{data.frame}, with \code{new_from} and recalculated \code{value} column
+a \code{data.frame}, with \code{output_partition} and recalculated \code{value} column
 }
 \description{
 \code{distill} takes a low-age resolution outcome, for example deaths,
@@ -23,8 +27,24 @@ use in subsequent analyses like years-life-lost style calculations.
 }
 \details{
 When the \code{value} column is re-calculated, note that it will aggregate all
-matching \code{from} / \code{model_from} rows in \code{outcomes_dt}. If you need to group
+rows with matching \code{groupcol} entries in \code{outcomes_dt}. If you need to group
 by other features in your input data (e.g. if you need to distill outcomes
-across multiple simulation outputs), that has to be done outside of any call
-to \code{distill()}.
+across multiple simulation outputs or at multiple time points), that has to
+be done by external grouping then calling \code{distill()}.
+}
+\examples{
+\dontshow{if (require(data.table)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+
+ifr_levin <- function(age_in_years) {
+  (10^(-3.27 + 0.0524 * age_in_years))/100
+}
+age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
+age_pyramid <- data.table(
+  from = 0:99, weight = ifelse(0:99 < 65, 1, .99^(0:99-64))
+) # flat age distribution, then 1\% annual deaths
+alembic_dt <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
+
+results <- data.table(model_partition = head(age_limits, -1))[, value := 10]
+distill(alembic_dt, results)
+\dontshow{\}) # examplesIf}
 }

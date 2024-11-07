@@ -10,7 +10,7 @@ blend(alembic_dt)
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
 }
 \value{
-a \code{data.table} of with two columns: \code{model_from} (partition lower
+a \code{data.table} of with two columns: \code{model_partition} (partition lower
 bounds) and \code{value} (parameter values for those partitions)
 }
 \description{

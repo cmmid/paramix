@@ -44,4 +44,5 @@ test_that("`interpolate_opts` works iteratively", {
   otherval <- 5
   res <- interpolate_opts(complexfun, other = otherval)
   res2 <- do.call(interpolate_opts, res)
+  expect_equal(res, res2)
 })
