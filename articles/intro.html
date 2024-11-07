@@ -155,9 +155,9 @@ adults. First, we need to get the relevant values:</p>
 <span></span>
 <span><span class="va">density_dt</span> <span class="op">&lt;-</span> <span class="va">pop_dt</span><span class="op">[</span>,</span>
 <span>  <span class="fu">.</span><span class="op">(</span></span>
-<span>    <span class="va">name</span>, from <span class="op">=</span> <span class="va">age</span>,</span>
-<span>    weight <span class="op">=</span> <span class="va">popF</span> <span class="op">+</span> <span class="va">popM</span></span>
-<span>  <span class="op">)</span></span>
+<span>    from <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">age</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">age</span><span class="op">)</span><span class="op">+</span><span class="fl">1</span><span class="op">)</span>,</span>
+<span>    weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">popF</span> <span class="op">+</span> <span class="va">popM</span>, <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="op">)</span>, by <span class="op">=</span> <span class="va">name</span></span>
 <span><span class="op">]</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/rm.html" class="external-link">rm</a></span><span class="op">(</span><span class="va">popF</span><span class="op">)</span></span>
@@ -169,7 +169,7 @@ of the parameter values for these approaches to summarisation:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">plot_dt</span> <span class="op">&lt;-</span> <span class="va">density_dt</span><span class="op">[</span>, <span class="op">{</span> <span class="co"># compute parameters for each country of interest</span></span>
 <span>  <span class="fu">paramix</span><span class="fu">::</span><span class="fu"><a href="../reference/parameter_summary.html">parameter_summary</a></span><span class="op">(</span></span>
-<span>    f_param <span class="op">=</span> <span class="va">ifr_levin</span>, f_dense <span class="op">=</span> <span class="va">.SD</span>, <span class="va">model_agelimits</span></span>
+<span>    f_param <span class="op">=</span> <span class="va">ifr_levin</span>, f_pop <span class="op">=</span> <span class="va">.SD</span>, <span class="va">model_agelimits</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span>, by <span class="op">=</span> <span class="va">name</span><span class="op">]</span></span></code></pre></div>
 <p>And plotting these different blends:</p>
@@ -200,9 +200,9 @@ like:</p>
 <code class="sourceCode R"><span><span class="co"># setup the model to outcome mapping using `alembic`s</span></span>
 <span><span class="va">mapping_dt</span> <span class="op">&lt;-</span> <span class="va">density_dt</span><span class="op">[</span>,</span>
 <span>  <span class="fu">paramix</span><span class="fu">::</span><span class="fu"><a href="../reference/alembic.html">alembic</a></span><span class="op">(</span></span>
-<span>    f_param <span class="op">=</span> <span class="va">ifr_levin</span>, f_dense <span class="op">=</span> <span class="va">.SD</span>,</span>
+<span>    f_param <span class="op">=</span> <span class="va">ifr_levin</span>, f_pop <span class="op">=</span> <span class="va">.SD</span>,</span>
 <span>    model_partition <span class="op">=</span> <span class="va">model_agelimits</span>,</span>
-<span>    output_partition <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">from</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">from</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1L</span>, by <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span></span>
+<span>    output_partition <span class="op">=</span> <span class="op">{</span> <span class="va">res</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">min</a></span><span class="op">(</span><span class="va">from</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">from</span><span class="op">)</span>, by <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span>; <span class="va">res</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">model_agelimits</span>, <span class="fl">1</span><span class="op">)</span>; <span class="va">res</span> <span class="op">}</span> </span>
 <span>  <span class="op">)</span>,</span>
 <span>  by <span class="op">=</span> <span class="va">name</span></span>
 <span><span class="op">]</span></span>
@@ -210,28 +210,28 @@ like:</p>
 <span><span class="va">params</span> <span class="op">&lt;-</span> <span class="va">mapping_dt</span><span class="op">[</span>, <span class="fu">paramix</span><span class="fu">::</span><span class="fu"><a href="../reference/blend.html">blend</a></span><span class="op">(</span><span class="va">.SD</span><span class="op">)</span>, by <span class="op">=</span> <span class="va">name</span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
-<th align="right">model_from</th>
+<th align="left"></th>
 <th align="right">Afghanistan</th>
 <th align="right">United Kingdom</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="right">0</td>
+<td align="left">0 - 4</td>
 <td align="right">0.0000074</td>
 <td align="right">0.0000074</td>
 </tr>
 <tr class="even">
-<td align="right">5</td>
+<td align="left">5 - 19</td>
 <td align="right">0.0000269</td>
 <td align="right">0.0000271</td>
 </tr>
 <tr class="odd">
-<td align="right">20</td>
+<td align="left">20 - 64</td>
 <td align="right">0.0011908</td>
 <td align="right">0.0024191</td>
 </tr>
 <tr class="even">
-<td align="right">65</td>
+<td align="left">65 - 100</td>
 <td align="right">0.0444615</td>
 <td align="right">0.0820226</td>
 </tr>
@@ -274,15 +274,15 @@ properly-weighted IFR values for each age group from above, these
 infections result in deaths as follows:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">model_density_dt</span> <span class="op">&lt;-</span> <span class="va">density_dt</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span></span>
-<span>  model_from <span class="op">=</span> <span class="va">model_agelimits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/findInterval.html" class="external-link">findInterval</a></span><span class="op">(</span><span class="va">from</span>, <span class="va">model_agelimits</span><span class="op">)</span><span class="op">]</span>,</span>
+<span>  model_partition <span class="op">=</span> <span class="va">model_agelimits</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/findInterval.html" class="external-link">findInterval</a></span><span class="op">(</span><span class="va">from</span>, <span class="va">model_agelimits</span><span class="op">)</span><span class="op">]</span>,</span>
 <span>  <span class="va">weight</span></span>
-<span><span class="op">)</span>, by <span class="op">=</span> <span class="va">name</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span>weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">weight</span><span class="op">)</span><span class="op">)</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_from</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,</span>
+<span><span class="op">)</span>, by <span class="op">=</span> <span class="va">name</span><span class="op">]</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span>weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">weight</span><span class="op">)</span><span class="op">)</span>, by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_partition</span><span class="op">)</span><span class="op">]</span><span class="op">[</span>,</span>
 <span>  <span class="va">weight</span> <span class="op">:=</span> <span class="va">weight</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">weight</span><span class="op">)</span>, by <span class="op">=</span> <span class="va">name</span></span>
 <span><span class="op">]</span></span>
 <span><span class="va">model_deaths_dt</span> <span class="op">&lt;-</span> <span class="va">model_density_dt</span><span class="op">[</span></span>
-<span>  <span class="va">params</span>, on <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_from</span><span class="op">)</span></span>
+<span>  <span class="va">params</span>, on <span class="op">=</span> <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_partition</span><span class="op">)</span></span>
 <span><span class="op">]</span><span class="op">[</span>,</span>
-<span>  <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_from</span>, deaths <span class="op">=</span> <span class="va">weight</span> <span class="op">*</span> <span class="fl">1e6</span> <span class="op">*</span> <span class="va">value</span><span class="op">)</span></span>
+<span>  <span class="fu">.</span><span class="op">(</span><span class="va">name</span>, <span class="va">model_partition</span>, deaths <span class="op">=</span> <span class="va">weight</span> <span class="op">*</span> <span class="fl">1e6</span> <span class="op">*</span> <span class="va">value</span><span class="op">)</span></span>
 <span><span class="op">]</span></span></code></pre></div>
 <table class="table">
 <thead><tr class="header">
@@ -319,8 +319,8 @@ compute all approaches mentioned above for comparison:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">distill_methods_dt</span> <span class="op">&lt;-</span> <span class="va">model_deaths_dt</span><span class="op">[</span>,</span>
 <span>  <span class="fu">paramix</span><span class="fu">::</span><span class="fu"><a href="../reference/distill_summary.html">distill_summary</a></span><span class="op">(</span></span>
-<span>    <span class="va">.SD</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">model_from</span>, value <span class="op">=</span> <span class="va">deaths</span><span class="op">)</span><span class="op">]</span>,</span>
-<span>    <span class="va">mapping_dt</span><span class="op">[</span><span class="va">name</span> <span class="op">==</span> <span class="va">.BY</span><span class="op">]</span></span>
+<span>    <span class="va">mapping_dt</span><span class="op">[</span><span class="va">name</span> <span class="op">==</span> <span class="va">.BY</span><span class="op">]</span>,</span>
+<span>    <span class="va">.SD</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span><span class="va">model_partition</span>, value <span class="op">=</span> <span class="va">deaths</span><span class="op">)</span><span class="op">]</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  by <span class="op">=</span> <span class="va">name</span></span>
 <span><span class="op">]</span></span></code></pre></div>

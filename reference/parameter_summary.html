@@ -44,12 +44,7 @@ then tables them up for convenient plotting.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_summary</span><span class="op">(</span></span>
-<span>  <span class="va">f_param</span>,</span>
-<span>  <span class="va">f_dense</span>,</span>
-<span>  <span class="va">model_partition</span>,</span>
-<span>  resolution <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/diff.html" class="external-link">diff</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/range.html" class="external-link">range</a></span><span class="op">(</span><span class="va">model_partition</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fl">1L</span></span>
-<span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">parameter_summary</span><span class="op">(</span><span class="va">f_param</span>, <span class="va">f_pop</span>, <span class="va">model_partition</span>, resolution <span class="op">=</span> <span class="fl">101L</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -58,17 +53,17 @@ then tables them up for convenient plotting.</p>
 
 <dl><dt id="arg-f-param">f_param<a class="anchor" aria-label="anchor" href="#arg-f-param"></a></dt>
 <dd><p>a function, <code>f(x)</code> which transforms the feature (e.g. age),
-and yields the parameter value. Alternatively, a <code>data.frame</code> where the first
-column is the feature (x) and the second is the parameter (y); see
+to yield the parameter values. Alternatively, a <code>data.frame</code> where the first
+column is the feature and the second is the parameter; see
 <code><a href="https://rdrr.io/r/grDevices/xy.coords.html" class="external-link">xy.coords()</a></code> for details. If the latter, combined with <code>pars_interp_opts</code>,
 and defaulting to spline interpolation.</p></dd>
 
 
-<dt id="arg-f-dense">f_dense<a class="anchor" aria-label="anchor" href="#arg-f-dense"></a></dt>
+<dt id="arg-f-pop">f_pop<a class="anchor" aria-label="anchor" href="#arg-f-pop"></a></dt>
 <dd><p>like <code>f_param</code>, either a density function (though it does
 not have to integrate to 1 like a pdf) or a <code>data.frame</code> of values. If the
-latter, combined with <code>dens_interp_opts</code> and defaulting to constant density
-from each x to the next.</p></dd>
+latter, it is treated as a series of populations within intervals, and
+then interpolated with <code>pop_interp_opts</code> to create a density function.</p></dd>
 
 
 <dt id="arg-model-partition">model_partition<a class="anchor" aria-label="anchor" href="#arg-model-partition"></a></dt>
@@ -78,7 +73,7 @@ partitioning that will be used in the model</p></dd>
 
 <dt id="arg-resolution">resolution<a class="anchor" aria-label="anchor" href="#arg-resolution"></a></dt>
 <dd><p>the number of points to calculate for the underlying
-<code>f_param</code> function.</p></dd>
+<code>f_param</code> function. The default 101 points means 100 partitions.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -107,27 +102,27 @@ uses <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">densities</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  from <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">100</span>,</span></span>
-<span class="r-in"><span>  weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">66</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.075</span> <span class="op">*</span> <span class="fl">1</span><span class="op">:</span><span class="fl">35</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  from <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">101</span>,</span></span>
+<span class="r-in"><span>  weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">66</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.075</span> <span class="op">*</span> <span class="fl">1</span><span class="op">:</span><span class="fl">35</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">model_partition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">20</span>, <span class="fl">65</span>, <span class="fl">101</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ps_dt</span> <span class="op">&lt;-</span> <span class="fu">parameter_summary</span><span class="op">(</span><span class="va">f_param</span>, <span class="va">densities</span>, <span class="va">model_partition</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">ps_dt</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>      model_category     x method        value</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;int&gt; &lt;num&gt; &lt;fctr&gt;        &lt;num&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   1:              1     0  f_val 5.370318e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   2:              1     1  f_val 6.058987e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   3:              1     2  f_val 6.835968e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   4:              1     3  f_val 7.712586e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   5:              1     4  f_val 8.701618e-06</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  ---                                         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 501:              4    96   wm_f 9.557924e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 502:              4    97   wm_f 9.557924e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 503:              4    98   wm_f 9.557924e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 504:              4    99   wm_f 9.557924e-02</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 505:              4   100   wm_f 9.557924e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>      model_category      x method        value</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               &lt;int&gt;  &lt;num&gt; &lt;fctr&gt;        &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   1:              1   0.00  f_val 5.370318e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   2:              1   1.01  f_val 6.066302e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   3:              1   2.02  f_val 6.852484e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   4:              1   3.03  f_val 7.740553e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   5:              1   4.04  f_val 8.743715e-06</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  ---                                          </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 501:              4  96.96   wm_f 9.557850e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 502:              4  97.97   wm_f 9.557850e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 503:              4  98.98   wm_f 9.557850e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 504:              4  99.99   wm_f 9.557850e-02</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 505:              4 101.00   wm_f 9.557850e-02</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">ps_dt</span><span class="op">)</span> <span class="op">+</span> <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, y <span class="op">=</span> <span class="va">value</span>, color <span class="op">=</span> <span class="va">method</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">geom_line</span><span class="op">(</span>data <span class="op">=</span> \<span class="op">(</span><span class="va">dt</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">dt</span>, <span class="va">method</span> <span class="op">==</span> <span class="st">"f_val"</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
@@ -143,6 +138,8 @@ uses <code><a href="https://rdrr.io/r/stats/integrate.html" class="external-link
 <span class="r-in"><span>  <span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">scale_x_continuous</span><span class="op">(</span><span class="st">"Age"</span>, breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">100</span>, by <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">scale_y_log10</span><span class="op">(</span><span class="st">"IFR"</span>, breaks <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="op">-</span><span class="fl">4</span>, <span class="op">-</span><span class="fl">2</span>, <span class="fl">0</span><span class="op">)</span>, limits <span class="op">=</span> <span class="fl">10</span><span class="op">^</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">6</span>, <span class="fl">0</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Removed 1 row containing missing values or values outside the scale range</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> (`geom_line()`).</span>
 <span class="r-plt img"><img src="parameter_summary-1.png" alt="" width="700" height="433"></span>
 </code></pre></div>
     </div>

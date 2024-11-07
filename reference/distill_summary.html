@@ -44,26 +44,33 @@ tables them up for convenient plotting.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">distill_summary</span><span class="op">(</span><span class="va">model_outcomes_dt</span>, <span class="va">alembic_dt</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">distill_summary</span><span class="op">(</span><span class="va">alembic_dt</span>, <span class="va">outcomes_dt</span>, groupcol <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">outcomes_dt</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-model-outcomes-dt">model_outcomes_dt<a class="anchor" aria-label="anchor" href="#arg-model-outcomes-dt"></a></dt>
-<dd><p>a <code>data.table</code> (or convertable to such) with columns
-<code>model_from</code> and <code>value</code></p></dd>
-
-
-<dt id="arg-alembic-dt">alembic_dt<a class="anchor" aria-label="anchor" href="#arg-alembic-dt"></a></dt>
+<dl><dt id="arg-alembic-dt">alembic_dt<a class="anchor" aria-label="anchor" href="#arg-alembic-dt"></a></dt>
 <dd><p>an <code><a href="alembic.html">alembic()</a></code> return value</p></dd>
+
+
+<dt id="arg-outcomes-dt">outcomes_dt<a class="anchor" aria-label="anchor" href="#arg-outcomes-dt"></a></dt>
+<dd><p>a long-format <code>data.frame</code> with a column either named
+<code>from</code> or <code>model_from</code> and a column <code>value</code> (other columns will be silently
+ignored)</p></dd>
+
+
+<dt id="arg-groupcol">groupcol<a class="anchor" aria-label="anchor" href="#arg-groupcol"></a></dt>
+<dd><p>a string, the name of the outcome model group column. The
+<code>outcomes_dt[[groupcol]]</code> column must match the <code>model_partition</code> lower
+bounds, as provided when constructing the <code>alembic_dt</code> with <code><a href="alembic.html">alembic()</a></code>.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>a <code>data.table</code>, columns:</p><ul><li><p><code>partition</code>, the feature point corresponding to the value</p></li>
-<li><p><code>value</code>, the translated <code>model_outcomes_dt$value</code></p></li>
+<li><p><code>value</code>, the translated <code>outcomes_dt$value</code></p></li>
 <li><p><code>method</code>, a factor with levels indicating how feature points are selected,
 and how <code>value</code> is weighted to those features:</p><ul><li><p><code>f_mid</code>: features at the <code>alembic_dt</code> outcome partitions, each with
 value corresponding to the total value of the corresponding model
@@ -77,14 +84,15 @@ partition</p></li>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">f_param</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">age_in_years</span><span class="op">)</span> <span class="op">{</span></span></span>
 <span class="r-in"><span>  <span class="op">(</span><span class="fl">10</span><span class="op">^</span><span class="op">(</span><span class="op">-</span><span class="fl">3.27</span> <span class="op">+</span> <span class="fl">0.0524</span> <span class="op">*</span> <span class="va">age_in_years</span><span class="op">)</span><span class="op">)</span><span class="op">/</span><span class="fl">100</span></span></span>
 <span class="r-in"><span><span class="op">}</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">model_partition</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">5</span>, <span class="fl">20</span>, <span class="fl">65</span>, <span class="fl">101</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">density_dt</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdatatable.gitlab.io/data.table/reference/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  from <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">100</span>, weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">66</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.075</span> <span class="op">*</span> <span class="fl">1</span><span class="op">:</span><span class="fl">35</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  from <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">101</span>, weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">66</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="op">-</span><span class="fl">0.075</span> <span class="op">*</span> <span class="fl">1</span><span class="op">:</span><span class="fl">35</span><span class="op">)</span>, <span class="fl">0</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">alembic_dt</span> <span class="op">&lt;-</span> <span class="fu"><a href="alembic.html">alembic</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">f_param</span>, <span class="va">density_dt</span>, <span class="va">model_partition</span>, <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">101</span>, by <span class="op">=</span> <span class="fl">1L</span><span class="op">)</span></span></span>
@@ -92,12 +100,11 @@ partition</p></li>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># for simplicity, assume a uniform force-of-infection across ages =&gt;</span></span></span>
 <span class="r-in"><span><span class="co"># infections proportion to population density.</span></span></span>
-<span class="r-in"><span><span class="va">model_outcomes_dt</span> <span class="op">&lt;-</span> <span class="va">density_dt</span><span class="op">[</span>, <span class="fu">.</span><span class="op">(</span>value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu">f_param</span><span class="op">(</span><span class="va">from</span><span class="op">)</span> <span class="op">*</span> <span class="va">weight</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span><span class="va">model_outcomes_dt</span> <span class="op">&lt;-</span> <span class="va">density_dt</span><span class="op">[</span><span class="va">from</span> <span class="op">!=</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">from</span><span class="op">)</span>, <span class="fu">.</span><span class="op">(</span>value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="fu">f_param</span><span class="op">(</span><span class="va">from</span><span class="op">)</span> <span class="op">*</span> <span class="va">weight</span><span class="op">)</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  by <span class="op">=</span> <span class="fu">.</span><span class="op">(</span>model_from <span class="op">=</span> <span class="va">model_partition</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/findInterval.html" class="external-link">findInterval</a></span><span class="op">(</span><span class="va">from</span>, <span class="va">model_partition</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">]</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="va">ds_dt</span> <span class="op">&lt;-</span> <span class="fu">distill_summary</span><span class="op">(</span><span class="va">model_outcomes_dt</span>, <span class="va">alembic_dt</span><span class="op">)</span></span></span>
-<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">ds_dt</span> <span class="op">&lt;-</span> <span class="fu">distill_summary</span><span class="op">(</span><span class="va">alembic_dt</span>, <span class="va">model_outcomes_dt</span><span class="op">)</span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -54,7 +54,7 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>a <code>data.table</code> of with two columns: <code>model_from</code> (partition lower
+    <p>a <code>data.table</code> of with two columns: <code>model_partition</code> (partition lower
 bounds) and <code>value</code> (parameter values for those partitions)</p>
     </div>
 
@@ -68,6 +68,7 @@ bounds) and <code>value</code> (parameter values for those partitions)</p>
 <span class="r-in"><span>  from <span class="op">=</span> <span class="fl">0</span><span class="op">:</span><span class="fl">99</span>, weight <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="fl">0</span><span class="op">:</span><span class="fl">99</span> <span class="op">&lt;</span> <span class="fl">65</span>, <span class="fl">1</span>, <span class="fl">.99</span><span class="op">^</span><span class="op">(</span><span class="fl">0</span><span class="op">:</span><span class="fl">99</span><span class="op">-</span><span class="fl">64</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span> <span class="co"># flat age distribution, then 1% annual deaths</span></span></span>
 <span class="r-in"><span><span class="va">alembic_dt</span> <span class="op">&lt;-</span> <span class="fu"><a href="alembic.html">alembic</a></span><span class="op">(</span><span class="va">ifr_levin</span>, <span class="va">age_pyramid</span>, <span class="va">age_limits</span>, <span class="fl">0</span><span class="op">:</span><span class="fl">100</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>data may not support bounds: upper bound 0 &gt; last column 1 entry 0</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">ifr_blend</span> <span class="op">&lt;-</span> <span class="fu">blend</span><span class="op">(</span><span class="va">alembic_dt</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># the actual function</span></span></span>
@@ -90,6 +91,7 @@ bounds) and <code>value</code> (parameter values for those partitions)</p>
 <span class="r-in"><span><span class="va">bad_alembic_dt</span> <span class="op">&lt;-</span> <span class="fu"><a href="alembic.html">alembic</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">ifr_levin</span>, <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">within</a></span><span class="op">(</span><span class="va">age_pyramid</span>, <span class="va">weight</span> <span class="op">&lt;-</span> <span class="fl">1</span><span class="op">)</span>, <span class="va">age_limits</span>, <span class="fl">0</span><span class="op">:</span><span class="fl">100</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>data may not support bounds: upper bound 0 &gt; last column 1 entry 0</span>
 <span class="r-in"><span><span class="va">ifr_unif</span> <span class="op">&lt;-</span> <span class="fu">blend</span><span class="op">(</span><span class="va">bad_alembic_dt</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/lines.html" class="external-link">lines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="va">age_limits</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">ifr_unif</span><span class="op">$</span><span class="va">value</span>, <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">ifr_unif</span><span class="op">$</span><span class="va">value</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>,</span></span>

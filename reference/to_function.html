@@ -41,7 +41,7 @@
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_function</span><span class="op">(</span><span class="va">x</span>, <span class="va">interp_opts</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">to_function</span><span class="op">(</span><span class="va">x</span>, <span class="va">bounds</span>, <span class="va">interp_opts</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -50,7 +50,13 @@
 
 <dl><dt id="arg-x">x<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
 <dd><p>a function or the single argument version of <code>x</code> in
-<code><a href="https://rdrr.io/r/grDevices/xy.coords.html" class="external-link">xy.coords()</a></code> (as per <code><a href="https://rdrr.io/r/stats/approxfun.html" class="external-link">approxfun()</a></code> or <code><a href="https://rdrr.io/r/stats/splinefun.html" class="external-link">splinefun()</a></code> inputs)</p></dd>
+<code><a href="https://rdrr.io/r/grDevices/xy.coords.html" class="external-link">xy.coords()</a></code> (as per <code><a href="https://rdrr.io/r/stats/approxfun.html" class="external-link">approxfun()</a></code> or <code><a href="https://rdrr.io/r/stats/splinefun.html" class="external-link">splinefun()</a></code> inputs). Pass through
+from user input, must be checked</p></dd>
+
+
+<dt id="arg-bounds">bounds<a class="anchor" aria-label="anchor" href="#arg-bounds"></a></dt>
+<dd><p>numeric vector, length 2: the partition lower bound; not checked,
+result of <code>range(make_partition(...))</code>.</p></dd>
 
 
 <dt id="arg-interp-opts">interp_opts<a class="anchor" aria-label="anchor" href="#arg-interp-opts"></a></dt>
