@@ -179,8 +179,14 @@ to_function <- function(x, bounds, interp_opts) {
       kind <- callargs$kind
       callargs$kind <- NULL
       if (kind == "integral") {
-        ws <- diff(c(x[[1]], bounds[2]))
-        x[[2]] <- x[[2]]/ws
+        if (tail(x[[2]], 1) != 0) {
+          stop(sprintf(
+            "for integral data, the final entry should be 0; got instead: %s",
+            toString(tail(x[[2]], 1))
+          ))
+        }
+        ws <- diff(x[[1]])
+        x[[2]] <- c(x[[2]]/ws, 0)
       }
     }
     callargs$.usekind <- NULL
