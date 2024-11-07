@@ -45,20 +45,22 @@ for (i in seq_along(widths)) {
   }
 }
 
+bound_pop_dt <- pop_dt[, .(from = c(from, max(from) + 1L), weight = c(weight, 0))]
+
 mapping_dt <- alembic(
-  f_param = f_ifr, f_pop = pop_dt[, .(from, weight)],
+  f_param = f_ifr, f_pop = bound_pop_dt,
   model_partition = model_agelimits,
-  output_partition = pop_dt[, seq(min(from), max(from) + 1L)]
+  output_partition = bound_pop_dt[, seq(min(from), max(from))]
 )
 
 # using `parameter_summary` instead of `blend`, because we want to compare to
 # the naive alternatives
 ifr_params <- parameter_summary(
-  f_param = f_ifr, f_pop = pop_dt[, .(from, weight)],
+  f_param = f_ifr, f_pop = bound_pop_dt,
   model_partition = model_agelimits
 )
 
-ifr_params[, model_from := model_agelimits[model_category]]
+ifr_params[, model_partition := model_agelimits[model_category]]
 
 save(
   model_agelimits, ifr_params, mapping_dt, cmij, sim_pars, cmijfull,
