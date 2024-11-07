@@ -4,18 +4,15 @@
 \alias{to_function}
 \title{Internal Conversion of Data to Function}
 \usage{
-to_function(x, lb, ub, interp_opts)
+to_function(x, bounds, interp_opts)
 }
 \arguments{
 \item{x}{a function or the single argument version of \code{x} in
 \code{\link[=xy.coords]{xy.coords()}} (as per \code{\link[=approxfun]{approxfun()}} or \code{\link[=splinefun]{splinefun()}} inputs). Pass through
 from user input, must be checked}
 
-\item{lb}{numeric scalar, the partition lower bound; not checked, result of
-\code{\link[=make_partition]{make_partition()}}.}
-
-\item{ub}{numeric scalar, the partition upper bound; not checked, result of
-\code{\link[=make_partition]{make_partition()}}.}
+\item{bounds}{numeric vector, length 2: the partition lower bound; not checked,
+result of \code{range(make_partition(...))}.}
 
 \item{interp_opts}{if \code{x} is function, ignored. Otherwise,
 an interpolating function and its arguments.}

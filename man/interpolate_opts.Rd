@@ -29,9 +29,9 @@ the information used in \code{\link[=alembic]{alembic()}} to do interpolation is
 
 The \code{...} arguments will be provided to \code{fun} when it is invoked to
 interpolate the tabular "functional" form of arguments to \code{\link[=alembic]{alembic()}}. If
-\code{fun} has an argument \code{kind}, that parameter will also be based when
+\code{fun} has an argument \code{kind}, that parameter will also be passed when
 invoking the function; if not, then the input data will be transformed to
-$x, z$ pairs, such that $(x_{i+1}-x_{i} * z_i) = y_i$ - i.e., transforming to
+\eqn{\{x, z\}} pairs, such that \eqn{x_{i+1}-x_{i} * z_i = y_i} - i.e., transforming to
 a point value and a functional form which is assumed constant until the next
 partition.
 }

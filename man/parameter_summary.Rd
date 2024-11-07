@@ -4,12 +4,7 @@
 \alias{parameter_summary}
 \title{Parameter Calculation Comparison Summary}
 \usage{
-parameter_summary(
-  f_param,
-  f_dense,
-  model_partition,
-  resolution = diff(range(model_partition)) + 1L
-)
+parameter_summary(f_param, f_pop, model_partition, resolution = 101L)
 }
 \arguments{
 \item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
@@ -18,11 +13,16 @@ column is the feature and the second is the parameter; see
 \code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
 and defaulting to spline interpolation.}
 
+\item{f_pop}{like \code{f_param}, either a density function (though it does
+not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
+latter, it is treated as a series of populations within intervals, and
+then interpolated with \code{pop_interp_opts} to create a density function.}
+
 \item{model_partition}{a numeric vector of cut points, which define the
 partitioning that will be used in the model}
 
 \item{resolution}{the number of points to calculate for the underlying
-\code{f_param} function.}
+\code{f_param} function. The default 101 points means 100 partitions.}
 }
 \value{
 a \code{data.table}, columns:
@@ -56,8 +56,8 @@ f_param <- function(age_in_years) {
 }
 
 densities <- data.frame(
-  from = 0:100,
-  weight = c(rep(1, 66), exp(-0.075 * 1:35))
+  from = 0:101,
+  weight = c(rep(1, 66), exp(-0.075 * 1:35), 0)
 )
 
 model_partition <- c(0, 5, 20, 65, 101)

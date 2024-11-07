@@ -55,9 +55,9 @@ check_bound <- function(vlen, var, res, what) {
 #' Internal utility method for creating partitions, possibly from multiple
 #' distinct partitions. Validates inputs.
 #'
-#' @param m_part the model partition
+#' @param model_partition the model partition
 #'
-#' @param o_part the output partition
+#' @param output_partition the output partition
 #'
 #' @return a sorted numeric vector with unique values
 #' @keywords internal
@@ -101,26 +101,68 @@ make_partition <- function(
   return(res)
 }
 
+sanitize_data <- function(x, bounds) {
+  if (dim(x)[2] < 2) {
+    stop(sprintf("data must have at least two columns."))
+  } else if (dim(x)[2] != 2) {
+    warning(sprintf(
+      "data has more than two columns; only using %s",
+      toString(names(x)[1:2])
+    ))
+  }
+  x <- x[, c(1, 2)]
+  if (!is.numeric(x[[1]]) || !is.numeric(x[[2]])) {
+    stop(sprintf(
+      "first two data columns must satisfy is.numeric; got classes %s, %s",
+      toString(class(x[[1]])),
+      toString(class(x[[2]]))
+    ))
+  }
+  if (is.unsorted(x[[1]])) {
+    warning(sprintf(
+      "data column 1 is unsorted: %s; will be sorted before interpolation",
+      toString(x[[1]])
+    ))
+    x <- x[order(x[[1]]), ]
+  }
+  if (bounds[1] < x[[1]][1]) {
+    warning(sprintf(
+      "data may not support bounds: lower bound %s < first column 1 entry %s",
+      bounds[1], x[[1]][1]
+    ))
+  }
+  if (bounds[2] > tail(x[[1]], 1)) {
+    warning(sprintf(
+      "data may not support bounds: upper bound %s > last column 1 entry %s",
+      bounds[1], x[[1]][1]
+    ))
+  }
+  if (length(unique(x[[1]])) != dim(x)[1]) {
+    warning(sprintf(
+      "data column 1 is not unique: %s; ensure interpolation function can handle this.",
+      toString(x[[1]])
+    ))
+  }
+  return(x)
+}
+
 #' @title Internal Conversion of Data to Function
 #'
 #' @param x a function or the single argument version of `x` in
 #' [xy.coords()] (as per [approxfun()] or [splinefun()] inputs). Pass through
 #' from user input, must be checked
 #'
-#' @param lb numeric scalar, the partition lower bound; not checked, result of
-#' [make_partition()].
-#'
-#' @param ub numeric scalar, the partition upper bound; not checked, result of
-#' [make_partition()].
+#' @param bounds numeric vector, length 2: the partition lower bound; not checked,
+#' result of `range(make_partition(...))`.
 #'
 #' @param interp_opts if `x` is function, ignored. Otherwise,
 #' an interpolating function and its arguments.
 #'
 #' @return a function
 #' @keywords internal
-to_function <- function(x, lb, ub, interp_opts) {
+to_function <- function(x, bounds, interp_opts) {
   if (is.function(x)) {
-    bcheck <- c(x(lb), x(ub))
+    bcheck <- c(x(bounds[1]), x(bounds[2]))
     if (any(is.na(bcheck))) {
       stop(c(sprintf(
         "The (lower, upper) bounds of the mixing partition evaluate to (%s, %s); the function %s must be defined on the whole partition.", deparse(substitute(x)), toString(bcheck[1]), toString(bcheck[2])
@@ -128,9 +170,20 @@ to_function <- function(x, lb, ub, interp_opts) {
     }
     return(x)
   } else if (is.data.frame(x)) {
-    callargs <- do.call(interpolation_opts, interp_opts)
+    x <- sanitize_data(x, bounds)
+
+    callargs <- do.call(interpolate_opts, interp_opts)
     callfun <- interp_opts$fun
     callargs$fun <- NULL
+    if (!callargs$.usekind) {
+      kind <- callargs$kind
+      callargs$kind <- NULL
+      if (kind == "integral") {
+        ws <- diff(c(x[[1]], bounds[2]))
+        x[[2]] <- x[[2]]/ws
+      }
+    }
+    callargs$.usekind <- NULL
     callargs$x <- x
     return(do.call(callfun, args = callargs))
   } else {

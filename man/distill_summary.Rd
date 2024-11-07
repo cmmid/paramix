@@ -4,19 +4,24 @@
 \alias{distill_summary}
 \title{Distillation Calculation Comparison Summary}
 \usage{
-distill_summary(model_outcomes_dt, alembic_dt)
+distill_summary(alembic_dt, outcomes_dt, groupcol = names(outcomes_dt)[1])
 }
 \arguments{
-\item{model_outcomes_dt}{a \code{data.table} (or convertable to such) with columns
-\code{model_from} and \code{value}}
-
 \item{alembic_dt}{an \code{\link[=alembic]{alembic()}} return value}
+
+\item{outcomes_dt}{a long-format \code{data.frame} with a column either named
+\code{from} or \code{model_from} and a column \code{value} (other columns will be silently
+ignored)}
+
+\item{groupcol}{a string, the name of the outcome model group column. The
+\code{outcomes_dt[[groupcol]]} column must match the \code{model_partition} lower
+bounds, as provided when constructing the \code{alembic_dt} with \code{\link[=alembic]{alembic()}}.}
 }
 \value{
 a \code{data.table}, columns:
 \itemize{
 \item \code{partition}, the feature point corresponding to the value
-\item \code{value}, the translated \code{model_outcomes_dt$value}
+\item \code{value}, the translated \code{outcomes_dt$value}
 \item \code{method}, a factor with levels indicating how feature points are selected,
 and how \code{value} is weighted to those features:
 \itemize{
@@ -35,6 +40,8 @@ Implements several approaches to imputing higher resolution outcomes, then
 tables them up for convenient plotting.
 }
 \examples{
+\dontshow{if (require(data.table)) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
+
 library(data.table)
 f_param <- function(age_in_years) {
   (10^(-3.27 + 0.0524 * age_in_years))/100
@@ -42,7 +49,7 @@ f_param <- function(age_in_years) {
 
 model_partition <- c(0, 5, 20, 65, 101)
 density_dt <- data.table(
-  from = 0:100, weight = c(rep(1, 66), exp(-0.075 * 1:35))
+  from = 0:101, weight = c(rep(1, 66), exp(-0.075 * 1:35), 0)
 )
 alembic_dt <- alembic(
   f_param, density_dt, model_partition, seq(0, 101, by = 1L)
@@ -50,10 +57,10 @@ alembic_dt <- alembic(
 
 # for simplicity, assume a uniform force-of-infection across ages =>
 # infections proportion to population density.
-model_outcomes_dt <- density_dt[, .(value = sum(f_param(from) * weight)),
+model_outcomes_dt <- density_dt[from != max(from), .(value = sum(f_param(from) * weight)),
   by = .(model_from = model_partition[findInterval(from, model_partition)])
 ]
 
-ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
-
+ds_dt <- distill_summary(alembic_dt, model_outcomes_dt)
+\dontshow{\}) # examplesIf}
 }

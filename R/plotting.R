@@ -8,7 +8,7 @@
 #' @inheritParams alembic
 #'
 #' @param resolution the number of points to calculate for the underlying
-#' `f_param` function.
+#' `f_param` function. The default 101 points means 100 partitions.
 #'
 #' @return a `data.table`, columns:
 #'  - `model_category`, a integer corresponding to which of the intervals of
@@ -33,8 +33,8 @@
 #' }
 #'
 #' densities <- data.frame(
-#'   from = 0:100,
-#'   weight = c(rep(1, 66), exp(-0.075 * 1:35))
+#'   from = 0:101,
+#'   weight = c(rep(1, 66), exp(-0.075 * 1:35), 0)
 #' )
 #'
 #' model_partition <- c(0, 5, 20, 65, 101)
@@ -61,37 +61,35 @@
 #' @importFrom data.table melt.data.table
 #' @export
 parameter_summary <- function(
-  f_param, f_dense, model_partition,
-  resolution = diff(range(model_partition)) + 1L
+  f_param, f_pop, model_partition,
+  resolution = 101L
 ) {
 
-  partition <- make_partition(model_partition)
+  output_partition <- seq(model_partition[1], tail(model_partition, 1), length.out = resolution)
 
   alembic_dt <- alembic(
-    f_param, f_dense, partition,
-    seq(partition[1], tail(partition, 1), length.out = resolution)
+    f_param, f_pop, model_partition, output_partition
   )
 
   plot_dt <- data.table::data.table(
-    x = head(
-      seq(partition[1], tail(partition, 1), length.out = resolution), -1
-    )
-  )[, f_val := f_param(x)]
+    x = output_partition
+  )[, f_val := attr(alembic_dt, "f_param")(x)]
 
   plot_dt[,
     model_category := findInterval(x, model_partition, all.inside = TRUE)
-  ][alembic_dt, on = .(x = new_from), density := density]
+  ][alembic_dt, on = .(x = output_partition), relpop := relpop]
+  plot_dt[is.na(relpop), relpop := 0]
 
   blended <- blend(alembic_dt)
 
   plot_dt[, c("f_mid", "f_mean", "mean_f", "wm_f") := .(
     f_param(mean(x)),
-    f_param(weighted.mean(x, density)),
-    weighted.mean(f_param(x), density),
+    f_param(weighted.mean(x, relpop)),
+    weighted.mean(f_param(x), relpop),
     blended[.GRP, value]
   ), by = model_category]
 
-  plot_dt$density <- NULL
+  plot_dt$relpop <- NULL
 
   return(melt.data.table(
     plot_dt,
@@ -110,14 +108,11 @@ utils::globalVariables(c(
 #' Implements several approaches to imputing higher resolution outcomes, then
 #' tables them up for convenient plotting.
 #'
-#' @param model_outcomes_dt a `data.table` (or convertable to such) with columns
-#' `model_from` and `value`
-#'
-#' @inheritParams blend
+#' @inheritParams distill
 #'
 #' @return a `data.table`, columns:
 #'  - `partition`, the feature point corresponding to the value
-#'  - `value`, the translated `model_outcomes_dt$value`
+#'  - `value`, the translated `outcomes_dt$value`
 #'  - `method`, a factor with levels indicating how feature points are selected,
 #'  and how `value` is weighted to those features:
 #'    * `f_mid`: features at the `alembic_dt` outcome partitions, each with
@@ -128,7 +123,8 @@ utils::globalVariables(c(
 #'    * `mean_f`: ...
 #'    * `wm_f`: the
 #'
-#' @examples
+#' @examplesIf require(data.table)
+#'
 #' library(data.table)
 #' f_param <- function(age_in_years) {
 #'   (10^(-3.27 + 0.0524 * age_in_years))/100
@@ -136,7 +132,7 @@ utils::globalVariables(c(
 #'
 #' model_partition <- c(0, 5, 20, 65, 101)
 #' density_dt <- data.table(
-#'   from = 0:100, weight = c(rep(1, 66), exp(-0.075 * 1:35))
+#'   from = 0:101, weight = c(rep(1, 66), exp(-0.075 * 1:35), 0)
 #' )
 #' alembic_dt <- alembic(
 #'   f_param, density_dt, model_partition, seq(0, 101, by = 1L)
@@ -144,48 +140,48 @@ utils::globalVariables(c(
 #'
 #' # for simplicity, assume a uniform force-of-infection across ages =>
 #' # infections proportion to population density.
-#' model_outcomes_dt <- density_dt[, .(value = sum(f_param(from) * weight)),
+#' model_outcomes_dt <- density_dt[from != max(from), .(value = sum(f_param(from) * weight)),
 #'   by = .(model_from = model_partition[findInterval(from, model_partition)])
 #' ]
 #'
-#' ds_dt <- distill_summary(model_outcomes_dt, alembic_dt)
+#' ds_dt <- distill_summary(alembic_dt, model_outcomes_dt)
 #'
 #' @import data.table
 #' @importFrom stats weighted.mean
 #' @export
 distill_summary <- function(
-  model_outcomes_dt,
-  alembic_dt
+  alembic_dt, outcomes_dt, groupcol = names(outcomes_dt)[1]
 ) {
-  setDT(model_outcomes_dt)
-  distilled_dt <- alembic_dt[model_outcomes_dt, on = .(model_from)]
-  distilled_dt[, weigh_at := new_from + c(diff(new_from) / 2, 0)]
+  setnames(setDT(outcomes_dt), groupcol, "model_partition")
+
+  distilled_dt <- alembic_dt[outcomes_dt, on = .(model_partition)]
+  distilled_dt[, weigh_at := output_partition + c(diff(output_partition) / 2, 0)]
 
   return(rbind(
     # approach 1: all outcomes at mean value
     distilled_dt[, .(
-        partition = weighted.mean(weigh_at, density),
+        partition = weighted.mean(weigh_at, relpop),
         value = value[1], method = "f_mean"
-      ), by = model_from
-    ][, .SD, .SDcols = -c("model_from")],
+      ), by = model_partition
+    ][, .SD, .SDcols = -c("model_partition")],
 
     # approach 2: outcomes spread uniformly within group
     distilled_dt[, .(
-      partition = new_from, value = value / .N, method = "f_mid"
-    ), by = model_from][, .SD, .SDcols = -c("model_from")],
+      partition = output_partition, value = value / .N, method = "f_mid"
+    ), by = model_partition][, .SD, .SDcols = -c("model_partition")],
 
     # TODO need to aggregate density_dt to new_from
 
     # approach 3: proportionally to age distribution within the group
     distilled_dt[, .(
-      partition = new_from, value = value * density / sum(density),
+      partition = output_partition, value = value * relpop / sum(relpop),
       method = "mean_f"
-    ), by = model_from][, .SD, .SDcols = -c("model_from")],
+    ), by = model_partition][, .SD, .SDcols = -c("model_partition")],
 
     # approach 4: proportionally to age *and* relative mortality rates
     setnames(
-      distill(alembic_dt, model_outcomes_dt)[, method := "wm_f"],
-      "new_from", "partition"
+      distill(alembic_dt, outcomes_dt)[, method := "wm_f"],
+      "output_partition", "partition"
     )
   )[, method := factor(method)])
 

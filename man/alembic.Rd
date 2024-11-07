@@ -40,13 +40,12 @@ corresponding to an interpolation function. Defaults to \code{\link[=splinefun]{
 "constant" interpolation.}
 }
 \value{
-a \code{data.table} with columns \code{model_part}, \code{out_part}, \code{weight} and
-\code{relpop}. The first two columns identify which partitions, for both the model
+a \code{data.table} with columns \code{model_partition}, \code{output_partition}, \code{weight} and
+\code{relpop}. The first two columns identify partition lower bounds, for both the model
 and output, the other values are associated with; the combination of
-\code{model_part} and \code{out_part} forms a unique identifier, but individually they
-may appear multiple times. which maps fractions of the original model partitions
-to the desired partitions, according to underlying relative outcome rates and
-densities
+\code{model_partition} and \code{output_partition} forms a unique identifier, but individually they
+may appear multiple times. Generally, this object is only useful as an input
+to the \code{\link[=blend]{blend()}} and \code{\link[=distill]{distill()}} tools.
 }
 \description{
 Create the Blending and Distilling Object

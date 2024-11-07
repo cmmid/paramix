@@ -19,9 +19,9 @@
 #'
 #' The `...` arguments will be provided to `fun` when it is invoked to
 #' interpolate the tabular "functional" form of arguments to [alembic()]. If
-#' `fun` has an argument `kind`, that parameter will also be based when
+#' `fun` has an argument `kind`, that parameter will also be passed when
 #' invoking the function; if not, then the input data will be transformed to
-#' $x, z$ pairs, such that $(x_{i+1}-x_{i} * z_i) = y_i$ - i.e., transforming to
+#' \eqn{\{x, z\}} pairs, such that \eqn{x_{i+1}-x_{i} * z_i = y_i} - i.e., transforming to
 #' a point value and a functional form which is assumed constant until the next
 #' partition.
 #'
@@ -48,6 +48,8 @@ interpolate_opts <- function(fun, kind = c("point", "integral"), ...) {
     stop("`fun` must have at least one argument.")
   }
   newargs <- list(...)
+  # for when interpolate_opts is do.call'd on interpolate_opts output
+  newargs$.usekind <- NULL
 
   baseret <- list(fun = fun, kind = kind, .usekind = "kind" %in% names(funargs))
 
