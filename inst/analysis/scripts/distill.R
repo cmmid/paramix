@@ -19,12 +19,20 @@ pop_dt <- pop_dt[
 load(.args[2])
 
 sim_dt <- readRDS(.args[3])[, .(
-  sim_method = method, intervention, time, model_from, value = deaths
-)][, .(value = sum(value)), by = .(sim_method, intervention, model_from)]
+  sim_method = method, intervention, time, model_partition, value = deaths
+)][, .(value = sum(value)), by = .(sim_method, intervention, model_partition)]
 
-dt <- sim_dt[,{
-  distill_summary(.SD, mapping_dt)
-}, by = .(sim_method, intervention)]
+partial_dt <- sim_dt[sim_method != "full"]
+full_dt <- setnames(
+  sim_dt[sim_method == "full"], "model_partition", "partition"
+)[, method := "hrm"]
+
+dt <- rbind(
+  partial_dt[,{
+    distill_summary(mapping_dt, .SD)
+  }, by = .(sim_method, intervention)],
+  full_dt
+)
 
 dt[, capita := pop_dt[, sum(weight*1000)] ]
 

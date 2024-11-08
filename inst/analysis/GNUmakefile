@@ -67,7 +67,7 @@ allinputs: $(call dat,population.rds lex.rds disease_pars.rda $(patsubst %,param
 # simulation time series, distillations, ylls - by various methods
 
 ${OUTDIR}/sim_%.rds: scripts/simulate.R $(call dat,population.rds param_%.rda) scripts/odin.R | ${OUTDIR}
-	$(call R,$(firstword $(subst _, ,$*)))
+	$(call R,$(firstword $(subst _, ,$*))) > $(subst rds,txt,$(subst sim,simlog,$@))
 
 ALLSIM := $(patsubst %,${OUTDIR}/sim_%.rds,${ALLSCN})
 allsim: ${ALLSIM}

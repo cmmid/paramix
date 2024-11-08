@@ -92,24 +92,24 @@ cat(
   approx_time[3],
   "full time",
   full_time[3],
-  file = stderr(),
+  file = stdout(),
   sep = "\n"
 )
 
-sim_dt[, model_from := model_agelimits[age_group]]
-nonfull_params <- ifr_params[method != "f_val", .(model_from, method, value) ] |> unique()
+sim_dt[, model_partition := model_agelimits[age_group]]
+nonfull_params <- ifr_params[method != "f_val", .(model_partition, method, value) ] |> unique()
 
 exp_sim_dt <- nonfull_params[, unique(method)] |> setNames(nm = _) |> lapply(\(m) sim_dt) |> rbindlist(idcol = "method")
 
-exp_sim_dt[nonfull_params, on = .(model_from, method), deaths := value * i.value]
+exp_sim_dt[nonfull_params, on = .(model_partition, method), deaths := value * i.value]
 
 capita_dt <- data.table(age_group = seq_along(demog), capita = demog)
 
 simfull_dt[, from := age_group - 1L]
 simfull_dt[pop_dt, on = .(from), capita := weight * 1e3]
-setnames(simfull_dt, "from", "model_from")
+setnames(simfull_dt, "from", "model_partition")
 simfull_dt[, method := "full"]
-simfull_dt[ifr_params[method == "f_val"], on = .(model_from = x), deaths := value * i.value]
+simfull_dt[ifr_params[method == "f_val"], on = .(model_partition = x), deaths := value * i.value]
 
 exp_sim_dt[capita_dt, on = .(age_group), capita := capita]
 

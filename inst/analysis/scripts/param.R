@@ -57,7 +57,7 @@ mapping_dt <- alembic(
 # the naive alternatives
 ifr_params <- parameter_summary(
   f_param = f_ifr, f_pop = bound_pop_dt,
-  model_partition = model_agelimits
+  model_partition = model_agelimits, resolution = 102L
 )
 
 ifr_params[, model_partition := model_agelimits[model_category]]
