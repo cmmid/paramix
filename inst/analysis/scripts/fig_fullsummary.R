@@ -17,7 +17,7 @@ load(.args[1])
 load(.args[4])
 inc_dt <- readRDS(.args[5])
 
-model_partition <- c(inc_dt[, unique(model_from)], 101)
+model_partition <- unique(sort(c(inc_dt[method == "f_mid", c(model_partition)], 101)))
 
 inc_dt <- inc_dt[method == "f_mean"][,
   .(value = sum(value), capita = sum(unique(capita))),
@@ -48,13 +48,17 @@ lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
   ) +
   labs(y = "Remaining life expectancy\n(years)")
 
-ifr_dt <- pop_dt[,
-  ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition)) |>
+bound_pop_dt <- pop_dt[, .(
+  from = c(from, max(from) + 1L), weight = c(weight, 0)
+), by = iso3]
+
+ifr_dt <- bound_pop_dt[,
+  ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition, resolution = 102L)) |>
     rbindlist(idcol = "pathogen"),
   by = iso3
 ]
 
-ifr_p <- ggplot(ifr_dt) + aes(x, y = value, color = method) +
+ifr_p <- ggplot(ifr_dt[x <= 100]) + aes(x, y = value, color = method) +
   facet_iso(rows = vars(pathogen), labeller = labeller(
     iso3 = iso_labels, pathogen = pathogen_labels
   )) +
@@ -71,7 +75,7 @@ ifr_p <- ggplot(ifr_dt) + aes(x, y = value, color = method) +
   ) +
   scale_x_continuous("Age (years)", breaks = seq(0, 100, by = 10)) +
   scale_y_log10(
-    "Infection Fatality Ratio",breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0)
+    "Infection Fatality Ratio", breaks = 10^c(-6, -4, -2, 0), limits = 10^c(-6, 0)
   )
 
 inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
