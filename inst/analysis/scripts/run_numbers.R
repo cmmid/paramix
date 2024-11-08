@@ -13,49 +13,39 @@ require(paramix)
 load(.args[1])
 
 inc_dt <- readRDS(.args[4])
-model_partition <- c(inc_dt[, unique(model_from)], 101)
+model_partition <- c(inc_dt[method == "f_mean", unique(model_partition)], 101)
 inc_dt <- inc_dt[method == "f_mean"][,
-                                     .(value = sum(value), capita = sum(unique(capita))),
-                                     by = .(iso3 = place, pathogen, intervention, time)
+  .(value = sum(value), capita = sum(unique(capita))),
+  by = .(iso3 = place, pathogen, intervention, time)
 ]
 isoset <- inc_dt[, unique(iso3)]
 
 load(.args[3])
 pop_dt <- readRDS(.args[2])[iso3 %in% isoset]
 
-ifr_dt <- pop_dt[,
-                 ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition)) |>
-                   rbindlist(idcol = "pathogen"),
-                 by = iso3
-]
+bound_pop_dt <- pop_dt[, .(
+  from = c(from, max(from) + 1L), weight = c(weight, 0)
+), by = iso3]
 
-cat('SC2 65+ IFR', "\n")
-cat('LMIC: [1] MEAN METHOD [2] PARAMIX', "\n")
-cat(paste0(round(100*ifr_dt[x==100 & method %in% c('f_mean','wm_f') & pathogen=='SC2' & iso3=='AFG']$value, 1), '%'), "\n")
-cat('HIC: [3] MEAN METHOD [4] PARAMIX', "\n")
-cat(paste0(round(100*ifr_dt[x==100 & method %in% c('f_mean','wm_f') & pathogen=='SC2' & iso3=='GBR']$value, 1), '%'), "\n")
-cat('\n')
+ifr_dt <- bound_pop_dt[,
+  ifr_opts |> lapply(\(fp) parameter_summary(fp, .SD, model_partition, resolution = 102)) |>
+    rbindlist(idcol = "pathogen"),
+  by = iso3
+][model_category == 4][x == max(x)] |>
+  dcast(iso3 + pathogen ~ method, value.var = "value")
 
-cat('SC2 65+ IFR, % INCREASE WITH PARAMIX', "\n")
-cat('LMIC:', "\n")
-cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='SC2' & iso3=='AFG']$value, 1) -
-              round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='AFG']$value, 1))/
-             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='AFG']$value, 1), '%'), "\n")
-cat('HIC:', "\n")
-cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='SC2' & iso3=='GBR']$value, 1) -
-                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='GBR']$value, 1))/
-             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='SC2' & iso3=='GBR']$value, 1), '%'), "\n")
-cat('\n')
-cat('FLU 65+ IFR, % INCREASE WITH PARAMIX', "\n")
-cat('LMIC:', "\n")
-cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='FLU' & iso3=='AFG']$value, 1) -
-                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='AFG']$value, 1))/
-             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='AFG']$value, 1), '%'), "\n")
-cat('HIC:', "\n")
-cat(paste0(100*(round(ifr_dt[x==100 & method %in% c('wm_f') & pathogen=='FLU' & iso3=='GBR']$value, 1) -
-                  round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='GBR']$value, 1))/
-             round(ifr_dt[x==100 & method %in% c('f_mean') & pathogen=='FLU' & iso3=='GBR']$value, 1), '%'), "\n")
-cat('\n')
+ifr_dt[, place := fifelse(iso3 == "AFG", "LMIC", "HIC")]
+
+for (path in ifr_dt[, unique(pathogen)]) {
+  cat(path, ' 65+ IFR', "\n")
+  for (plc in ifr_dt[, unique(place)]) {
+    cat(plc, ': [1] MEAN METHOD [2] PARAMIX', "\n")
+    cat(paste0(ifr_dt[pathogen==path & place==plc, signif(100*c(f_mean, wm_f), 3)], '%'), "\n")
+    cat('% INCREASE WITH PARAMIX', "\n")
+    cat(ifr_dt[pathogen == path & place == plc, signif(100*(wm_f - f_mean)/f_mean, 3)], '%', "\n")
+  }
+  cat('\n')
+}
 
 ts_dt <- readRDS(.args[4])
 
@@ -69,22 +59,22 @@ int_dt <- ts_dt[intervention != "none", .(
   base_dt, on = c(joinvars)
 ]
 int_dt[, averted_death := i.deaths - deaths]
-int_dt$method <- factor(int_dt$method, levels=unique(int_dt$method))
+int_dt[, place := fifelse(place == "AFG", "LMIC", "HIC")]
 
-cat('% OVERESTIMATE DEATHS COMPARED TO PARAMIX', "\n")
-cat('SC2 LMIC: [1] VAX YOUNG [2] VAX WORKING [3] VAX OLDER', "\n")
-cat(paste0(round(100*(int_dt[method=='f_mid'&pathogen=='SC2'&place=='AFG']$averted_death-int_dt[method=='wm_f'&pathogen=='SC2'&place=='AFG']$averted_death)/
-                     int_dt[method=='wm_f'&pathogen=='SC2'&place=='AFG']$averted_death, 2), '%'), "\n")
-cat('FLU LMIC: [1] VAX YOUNG [2] VAX WORKING [3] VAX OLDER', "\n")
-cat(paste0(round(100*(int_dt[method=='f_mid'&pathogen=='FLU'&place=='AFG']$averted_death-int_dt[method=='wm_f'&pathogen=='FLU'&place=='AFG']$averted_death)/
-                     int_dt[method=='wm_f'&pathogen=='FLU'&place=='AFG']$averted_death, 2), '%'), "\n")
-cat('SC2 HIC: [1] VAX YOUNG [2] VAX WORKING [3] VAX OLDER', "\n")
-cat(paste0(round(100*(int_dt[method=='f_mid'&pathogen=='SC2'&place=='GBR']$averted_death-int_dt[method=='wm_f'&pathogen=='SC2'&place=='GBR']$averted_death)/
-                     int_dt[method=='wm_f'&pathogen=='SC2'&place=='GBR']$averted_death, 2), '%'), "\n")
-cat('FLU HIC: [1] VAX YOUNG [2] VAX WORKING [3] VAX OLDER', "\n")
-cat(paste0(round(100*(int_dt[method=='f_mid'&pathogen=='FLU'&place=='GBR']$averted_death-int_dt[method=='wm_f'&pathogen=='FLU'&place=='GBR']$averted_death)/
-                     int_dt[method=='wm_f'&pathogen=='FLU'&place=='GBR']$averted_death, 2), '%'), "\n")
-cat('\n')
+melt_int_dt <- int_dt[method %in% c("f_mid", "wm_f")] |>
+  dcast(place + pathogen + intervention ~ method, value.var = "averted_death")
+
+cat('% OVERESTIMATE BENEFIT (DEATHS AVERTED) COMPARED TO PARAMIX', "\n")
+for (plc in melt_int_dt[, unique(place)]) {
+  for (path in melt_int_dt[, unique(pathogen)]) {
+    cat(path, ' ', plc, ': [1] VAX OLDER [2] VAX WORKING [3] VAX YOUNG', "\n")
+    cat(paste0(melt_int_dt[
+      pathogen == path & place == plc,
+      setNames(signif(100*(f_mid - wm_f)/wm_f, 3), intervention)
+    ], "%"), "\n")
+  }
+  cat('\n')
+}
 
 ylls_dt <- readRDS(.args[5])
 base_dt <- ylls_dt[
@@ -97,13 +87,19 @@ int_dt[, averted_yll := i.YLL - YLL]
 int_dt[, sim_method := factor(sim_method, levels = names(model_assumption_labels), ordered = TRUE)]
 int_dt[, method := factor(method, levels = names(model_assumption_labels), ordered = TRUE)]
 int_dt <- int_dt[sim_method=='wm_f'][, sim_method:=NULL]
+int_dt[, place := fifelse(place == "AFG", "LMIC", "HIC")]
+
+melt_int_dt <- int_dt[method %in% c("mean_f", "wm_f")] |>
+  dcast(pathogen + place + intervention ~ method, value.var = "averted_yll")
 
 cat('% OVERESTIMATE YLLS COMPARED TO PARAMIX', "\n")
-cat('LMIC: [1] SC2 [2] FLU', "\n")
-cat(paste0(100*round((int_dt[method=='mean_f' & intervention=='vax_working' & place=='AFG']$averted_yll -
-                      int_dt[method=='wm_f' & intervention=='vax_working' & place=='AFG']$averted_yll)/
-                     int_dt[method=='wm_f' & intervention=='vax_working' & place=='AFG']$averted_yll,2), '%'), "\n")
-cat('HIC: [1] SC2 [2] FLU', "\n")
-cat(paste0(100*round((int_dt[method=='mean_f' & intervention=='vax_working' & place=='GBR']$averted_yll -
-                          int_dt[method=='wm_f' & intervention=='vax_working' & place=='GBR']$averted_yll)/
-                         int_dt[method=='wm_f' & intervention=='vax_working' & place=='GBR']$averted_yll,2), '%'), "\n")
+for (plc in melt_int_dt[, unique(place)]) {
+  for (path in melt_int_dt[, unique(pathogen)]) {
+    cat(path, ' ', plc, ': [1] VAX OLDER [2] VAX WORKING [3] VAX YOUNG', "\n")
+    cat(paste0(melt_int_dt[
+      pathogen == path & place == plc,
+      setNames(signif(100*(mean_f - wm_f)/wm_f, 3), intervention)
+    ], "%"), "\n")
+  }
+  cat('\n')
+}
