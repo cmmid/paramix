@@ -151,15 +151,15 @@ trap <- function(.target) {
 
   model_assumption_labels <- c(
     f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix",
-    f_val = "IFR(age)"
+    f_val = "IFR(age)", full = "1 yr groups"
   )
-  model_assumption_cols <- c("#d01c8b", "#f1b6da", "#b8e186", "#4dac26", "black") |>
+  model_assumption_cols <- c("#d01c8b", "#f1b6da", "#b8e186", "#4dac26", "black", "grey25") |>
     setNames(names(model_assumption_labels))
 
   distill_assumption_labels <- c(
     "Uniform\nacross age group", "Mean age",
-    "Prop. to\npop. density", "paramix"
-  ) |> setNames(head(names(model_assumption_labels), -1))
+    "Prop. to\npop. density", "paramix", "unused", "1 yr groups"
+  ) |> setNames(names(model_assumption_labels))
 
   scale_color_intervention <- rejig(
     scale_color_manual, name = "Vaccinate ",
