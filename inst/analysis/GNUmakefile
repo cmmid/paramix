@@ -36,6 +36,7 @@ clean:
 	rm -rf ${DATDIR}
 	rm -rf ${OUTDIR}
 	rm -rf ${FIGDIR}
+	rm -rf renv/library
 
 ##### INPUTS ###################################################################
 # population data, life expectancy tables, IFR curves,
