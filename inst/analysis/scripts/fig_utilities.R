@@ -150,21 +150,41 @@ trap <- function(.target) {
   pathogen_labels <- c(FLU = "Flu-like", SC2 = "COVID-like")
 
   model_assumption_labels <- c(
-    f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = "E[IFR(Age)]", wm_f = "paramix",
-    f_val = "IFR(age)", full = "1 yr groups"
+    f_mid = "IFR(mid(Age))", f_mean = "IFR(E[Age])", mean_f = 'unused', wm_f = "paramix",
+    f_val = "IFR(age)", full = "High resolution"
   )
   model_assumption_cols <- c("#d01c8b", "#f1b6da", "#b8e186", "#4dac26", "black", "grey25") |>
     setNames(names(model_assumption_labels))
 
   distill_assumption_labels <- c(
     "Uniform\nacross age group", "Mean age",
-    "Prop. to\npop. density", "paramix", "unused", "1 yr groups"
+    "Prop. to\npop. density", "paramix", "unused", "High resolution"
   ) |> setNames(names(model_assumption_labels))
+
+  model_cols <- c("#fed976", "#feb24c", "black", "#fd8d3c", "#f03b20", "#bd0026") |>
+    setNames(names(model_assumption_labels))
+
+  distill_cols <- c("#fed976", "#feb24c", "#fd8d3c", "#f03b20", "black", "#bd0026") |>
+    setNames(names(distill_assumption_labels))
 
   scale_color_intervention <- rejig(
     scale_color_manual, name = "Vaccinate ",
     breaks = names(intervention_labels), labels = intervention_labels,
     values = intervention_cols,
+    aesthetics = c("color", "fill")
+  )
+
+  scale_color_model <- rejig(
+    scale_color_manual, name = "Approach",
+    breaks = names(model_assumption_labels), labels = model_assumption_labels,
+    values = model_cols,
+    aesthetics = c("color", "fill")
+  )
+
+  scale_color_distill <- rejig(
+    scale_color_manual, name = "Approach",
+    breaks = names(distill_assumption_labels), labels = distill_assumption_labels,
+    values = distill_cols,
     aesthetics = c("color", "fill")
   )
 

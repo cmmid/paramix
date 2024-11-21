@@ -27,10 +27,12 @@ int_dt[, method := factor(method, levels = names(model_assumption_labels), order
 
 int_dt[sim_method == "full", method := factor(sim_method, levels = names(model_assumption_labels), ordered = TRUE) ]
 
+int_dt$intervention <- factor(int_dt$intervention, levels=c('vax_young','vax_working','vax_older'))
+
 # choosing to only show results when using the 'paramix' deaths
-p <- ggplot(int_dt[sim_method == 'wm_f' | sim_method == "full"]) + aes(
-  x = method, group = intervention,
-  y = averted_yll/1000, fill = intervention, shape = sim_method
+p <- ggplot(int_dt[sim_method == "wm_f" | sim_method == 'full']) + aes(
+  x = intervention, group = method,
+  y = averted_yll/1000, fill = method, shape = sim_method
 ) +
   facet_nested(place ~ pathogen, scale = "free_y", labeller = labeller(
     pathogen = pathogen_labels, place = iso_labels
@@ -42,12 +44,9 @@ p <- ggplot(int_dt[sim_method == 'wm_f' | sim_method == "full"]) + aes(
     panel.spacing.x = unit(1.5, "line"),
     axis.text.x = element_text(angle = 0)
   ) +
-  scale_x_discrete("Disaggregation assumption", labels = distill_assumption_labels) +
-  # scale_y_log10("Years of life saved (thousands)") +
+  scale_x_discrete("Vaccination age group", labels = intervention_labels) +
   scale_y_continuous("Years of life saved (thousands)") +
-  scale_color_intervention(
-    breaks = rev(names(intervention_labels)) # order by ranking
-  ) + scale_shape_discrete("Simulation\nRate Assumption", labels = model_assumption_labels)
+  scale_color_distill() + scale_shape_discrete("Simulation\nRate Assumption", labels = model_assumption_labels)
 
 ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
 

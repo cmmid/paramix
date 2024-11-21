@@ -58,7 +58,7 @@ ifr_dt <- bound_pop_dt[,
   by = iso3
 ]
 
-ifr_p <- ggplot(ifr_dt[x <= 100]) + aes(x, y = value, color = method) +
+ifr_p <- ggplot(ifr_dt[x <= 100 & !method=='mean_f']) + aes(x, y = value, color = method) +
   facet_iso(rows = vars(pathogen), labeller = labeller(
     iso3 = iso_labels, pathogen = pathogen_labels
   )) +
@@ -99,8 +99,8 @@ inc_p <- ggplot(inc_dt[between(time, 0, 7*15)]) + aes(
   )
 
 
-summary_p <- pop_p + lex_p + ifr_p + inc_p + plot_layout(
-  ncol = 1, heights = c(1, 1, 2, 1)
+summary_p <- pop_p + ifr_p + inc_p + plot_layout(
+  ncol = 1, heights = c(1, 2, 1)
 ) +  plot_annotation(tag_levels = 'a', tag_prefix = '(',
                      tag_suffix = ')  ')
 

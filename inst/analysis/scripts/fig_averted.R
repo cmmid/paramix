@@ -27,11 +27,12 @@ int_dt <- ts_dt[intervention != "none", .(
 int_dt[, averted_death := i.deaths - deaths]
 
 int_dt$method <- factor(int_dt$method, levels=unique(int_dt$method))
+int_dt$intervention <- factor(int_dt$intervention, levels=unique(int_dt$intervention))
 
 # in this model, deaths do not affect dynamics, so the method for aggregating
 # death parameter (`method` field) is irrelevant
-p <- ggplot(int_dt) + aes(
-  x = method, y = 1000*averted_death/capita, fill = intervention
+p <- ggplot(int_dt[!method=='mean_f']) + aes(
+  x = intervention, y = 1000*averted_death/capita, fill = method
 ) +
   facet_nested(place ~ pathogen, scale = "free_y", labeller = labeller(
     pathogen = pathogen_labels, place = iso_labels
@@ -41,10 +42,8 @@ p <- ggplot(int_dt) + aes(
     element_text(size = 16), legend.position = "right",
     panel.spacing.x = unit(1.5, "line")
   ) +
-  scale_x_discrete("Aggregation assumption", labels = model_assumption_labels) +
+  scale_x_discrete("Vaccination age group", labels = intervention_labels) +
   scale_y_continuous("Deaths averted (per 1000)") +
-  scale_color_intervention(
-    breaks = rev(names(intervention_labels)) # order by ranking
-  )
+  scale_color_model()
 
 ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
