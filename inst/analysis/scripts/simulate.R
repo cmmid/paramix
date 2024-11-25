@@ -56,19 +56,20 @@ vax_cov_opts <- list(
   vax_older = c(0, 0, 0, vax_num)
 )
 
-seed_infected <- 1000
+seed_prop <- 0.001/100
 
 approx_time <- system.time(sim_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   epidemic_time_series(
     vacc_cov = vax_cov_opts[[opt]],
-    demog = demog, init_infected = c(0, 0, seed_infected, 0),
+    demog = demog, init_infected = seed_prop*demog,
     length_of_epid = 20*7, disease_pars = sim_pars,
     contact_mat = cmij
   )
 }) |> rbindlist(idcol = "intervention"))
 
-I0 <- numeric(length = pop_dt[, .N])
-I0[which(pop_dt$age_group == 3)] <- pop_dt[age_group == 3, seed_infected*weight/sum(weight)]
+# I0 <- numeric(length = pop_dt[, .N])
+# I0[which(pop_dt$age_group == 3)] <- pop_dt[age_group == 3, seed_infected*weight/sum(weight)]
+I0 <- 1e3*seed_prop*pop_dt$weight
 
 full_time <- system.time(simfull_dt <- names(vax_cov_opts) |> setNames(nm = _) |> lapply(\(opt) {
   dup_pop_dt <- copy(pop_dt)

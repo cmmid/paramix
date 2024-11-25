@@ -157,7 +157,7 @@ trap <- function(.target) {
     setNames(names(model_assumption_labels))
 
   distill_assumption_labels <- c(
-    "Uniform\nacross age group", "Mean age",
+    "Uniform", "Mean age",
     "Prop. to\npop. density", "paramix", "unused", "High resolution"
   ) |> setNames(names(model_assumption_labels))
 
