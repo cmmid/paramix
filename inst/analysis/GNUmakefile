@@ -102,17 +102,17 @@ ${UTIL}: scripts/fig_utilities.R | ${FIGDIR} ${RENV}
 #${FIGDIR}/fig1.png: scripts/fig1.R ${OUTDIR}/consolidated.rds | ${FIGDIR}
 #	$(call R)
 
-${FIGDIR}/summary.png: scripts/fig_fullsummary.R ${UTIL} \
+${FIGDIR}/summary.%: scripts/fig_fullsummary.R ${UTIL} \
 $(call dat,population.rds lex.rds disease_pars.rda) ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/incidence.png: scripts/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
+${FIGDIR}/incidence.%: scripts/fig_incidence.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/averted.png: scripts/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
+${FIGDIR}/averted.%: scripts/fig_averted.R ${UTIL} ${OUTDIR}/incidence.rds
 	$(call R)
 
-${FIGDIR}/yll.png: scripts/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
+${FIGDIR}/yll.%: scripts/fig_yll.R ${UTIL} ${OUTDIR}/consolidated.rds
 	$(call R)
 
 allfigs: $(call fig,incidence averted yll summary)
