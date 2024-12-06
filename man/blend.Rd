@@ -20,11 +20,15 @@ bounds) and \code{value} (parameter values for those partitions)
 ifr_levin <- function(age_in_years) {
   (10^(-3.27 + 0.0524 * age_in_years))/100
 }
-age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
+
+age_limits <- c(seq(0, 69, by = 5), 70, 80, 101)
 age_pyramid <- data.frame(
-  from = 0:99, weight = ifelse(0:99 < 65, 1, .99^(0:99-64))
-) # flat age distribution, then 1\% annual deaths
-alembic_dt <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
+  from = 0:101, weight = ifelse(0:101 < 65, 1, .99^(0:101-64))
+)
+age_pyramid$weight[102] <- 0
+# flat age distribution, then 1\% annual deaths, no one lives past 101
+
+alembic_dt <- alembic(ifr_levin, age_pyramid, age_limits, 0:101)
 
 ifr_blend <- blend(alembic_dt)
 # the actual function
@@ -45,7 +49,8 @@ lines(
 )
 # properly aggregated, but not accounting for age distribution
 bad_alembic_dt <- alembic(
-  ifr_levin, within(age_pyramid, weight <- 1), age_limits, 0:100
+  ifr_levin,
+  within(age_pyramid, weight <- c(rep(1, 101), 0)), age_limits, 0:101
 )
 ifr_unif <- blend(bad_alembic_dt)
 lines(

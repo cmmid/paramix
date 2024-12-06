@@ -54,10 +54,12 @@ Create the Blending and Distilling Object
 ifr_levin <- function(age_in_years) {
   (10^(-3.27 + 0.0524 * age_in_years))/100
 }
-age_limits <- c(seq(0, 69, by = 5), 70, 80, 100)
+age_limits <- c(seq(0, 69, by = 5), 70, 80, 101)
 age_pyramid <- data.frame(
-  from = 0:100, weight = ifelse(0:100 < 65, 1, .99^(0:100-64))
-) # flat age distribution, then 1\% annual deaths
-ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:100)
+  from = 0:101, weight = ifelse(0:101 < 65, 1, .99^(0:101-64))
+)
+age_pyramid$weight[102] <- 0
+# flat age distribution, then 1\% annual deaths, no one lives past 101
+ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:101)
 
 }
