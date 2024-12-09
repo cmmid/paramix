@@ -119,9 +119,10 @@ utils::globalVariables(c(
 #'    value corresponding to the total value of the corresponding model
 #'    partition, divided by the number of outcome partitions in that model
 #'    partition
-#'    * `f_mean`: ...
-#'    * `mean_f`: ...
-#'    * `wm_f`: the
+#'    * `f_mean`: the features at the model partition means
+#'    * `mean_f`: the features distributed according to the relative density in
+#'    the outcome partitions
+#'    * `wm_f`: the [alembic()] approach
 #'
 #' @examplesIf require(data.table)
 #'
@@ -170,13 +171,12 @@ distill_summary <- function(
       partition = output_partition, value = value / .N, method = "f_mid"
     ), by = model_partition][, .SD, .SDcols = -c("model_partition")],
 
-    # TODO need to aggregate density_dt to new_from
-
     # approach 3: proportionally to age distribution within the group
     distilled_dt[, .(
-      partition = output_partition, value = value * relpop / sum(relpop),
-      method = "mean_f"
-    ), by = model_partition][, .SD, .SDcols = -c("model_partition")],
+      partition = output_partition, value = value * relpop / sum(relpop)
+    ), by = model_partition][,
+      .(value = sum(value), method = "mean_f"), by = partition
+    ],
 
     # approach 4: proportionally to age *and* relative mortality rates
     setnames(
@@ -187,4 +187,4 @@ distill_summary <- function(
 
 }
 
-utils::globalVariables(c("model_from", "weigh_at", "method"))
+utils::globalVariables(c("model_from", "weigh_at", "method", "partition"))

@@ -29,9 +29,10 @@ and how \code{value} is weighted to those features:
 value corresponding to the total value of the corresponding model
 partition, divided by the number of outcome partitions in that model
 partition
-\item \code{f_mean}: ...
-\item \code{mean_f}: ...
-\item \code{wm_f}: the
+\item \code{f_mean}: the features at the model partition means
+\item \code{mean_f}: the features distributed according to the relative density in
+the outcome partitions
+\item \code{wm_f}: the \code{\link[=alembic]{alembic()}} approach
 }
 }
 }
