@@ -161,7 +161,7 @@ trap <- function(.target) {
     "Prop. to\npop. density", "paramix", "unused", "High resolution"
   ) |> setNames(names(model_assumption_labels))
 
-  model_cols <- c("#fed976", "#feb24c", "black", "#fd8d3c", "#f03b20", "#bd0026") |>
+  model_cols <- c("#fed976", "#feb24c", "black","#f03b20", "#fd8d3c", "#bd0026") |>
     setNames(names(model_assumption_labels))
 
   distill_cols <- c("#fed976", "#feb24c", "#fd8d3c", "#f03b20", "black", "#bd0026") |>

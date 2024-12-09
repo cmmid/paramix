@@ -43,7 +43,7 @@ p <- ggplot(int_dt[!method=='mean_f']) + aes(
     panel.spacing.x = unit(1.5, "line")
   ) +
   scale_x_discrete("Vaccination age group", labels = intervention_labels) +
-  scale_y_continuous("Deaths averted (per 1000)") +
+  scale_y_continuous("Deaths averted (per 1000 total population)") +
   scale_color_model()
 
 ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
