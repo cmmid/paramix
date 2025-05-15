@@ -33,9 +33,9 @@ pop_p <- ggplot(pop_dt) + aes(x = from, y = weight) +
   facet_iso() +
   geom_bar(stat = "identity", fill = "#b2abd2", width = 1) +
   theme_minimal() + theme(
-    axis.title.x = element_blank(), axis.text.x = element_blank(),
+    # axis.title.x = element_blank(), axis.text.x = element_blank(),
     panel.spacing.x = unit(1.5, "line")
-  ) +
+  ) + scale_x_continuous("Age (years)", breaks = seq(0, 100, by = 10)) +
   labs(y = "Population\n(thousands)")
 
 lex_p <- ggplot(lex_dt) + aes(x = age, y = ex) +
