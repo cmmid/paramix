@@ -18,9 +18,9 @@ alembic(
 \arguments{
 \item{f_param}{a function, \code{f(x)} which transforms the feature (e.g. age),
 to yield the parameter values. Alternatively, a \code{data.frame} where the first
-column is the feature and the second is the parameter; see
-\code{\link[=xy.coords]{xy.coords()}} for details. If the latter, combined with \code{pars_interp_opts},
-and defaulting to spline interpolation.}
+column is the feature and the second is the parameter; see \code{\link[=xy.coords]{xy.coords()}} for
+details. If the latter, combined with \code{pars_interp_opts} to create a
+parameter function.}
 
 \item{f_pop}{like \code{f_param}, either a density function (though it does
 not have to integrate to 1 like a pdf) or a \code{data.frame} of values. If the
@@ -28,19 +28,20 @@ latter, it is treated as a series of populations within intervals, and
 then interpolated with \code{pop_interp_opts} to create a density function.}
 
 \item{model_partition}{a numeric vector of cut points, which define the
-partitioning that will be used in the model}
+partitioning that will be used in the model; must be length > 1}
 
-\item{output_partition}{the partition of the underlying feature}
+\item{output_partition}{the partition of the underlying feature; must be
+length > 1}
 
 \item{pars_interp_opts}{a list, minimally with an element \code{fun},
 corresponding to an interpolation function. Defaults to \code{\link[=splinefun]{splinefun()}}
 "natural" interpolation.}
 
-\item{pop_interp_opts}{ibid, but for density. Defaults to \code{\link[=approxfun]{approxfun()}}
-"constant" interpolation.}
+\item{pop_interp_opts}{like \code{pars_interp_opts}, but for density. Defaults to
+\code{\link[=approxfun]{approxfun()}} "constant" interpolation.}
 }
 \value{
-a \code{data.table} with columns \code{model_partition}, \code{output_partition}, \code{weight} and
+a \code{data.table} with columns: \code{model_partition}, \code{output_partition}, \code{weight} and
 \code{relpop}. The first two columns identify partition lower bounds, for both the model
 and output, the other values are associated with; the combination of
 \code{model_partition} and \code{output_partition} forms a unique identifier, but individually they
@@ -48,7 +49,45 @@ may appear multiple times. Generally, this object is only useful as an input
 to the \code{\link[=blend]{blend()}} and \code{\link[=distill]{distill()}} tools.
 }
 \description{
-Create the Blending and Distilling Object
+Based on model and output partitions, create a mixing partition and
+associated weights. That table of mixing values can be used to properly
+discretize a continuously varying (or otherwise high resolution) parameter to
+a relatively low resolution compartmental stratification, and then
+subsequently allocate the low-resolution model outcomes into the most likely
+high-resolution output partitions.
+}
+\details{
+The \code{alembic} function creates a mixing table, which governs the conversion
+between model and output partitions. The mixing table a \code{\link[=data.table]{data.table()}} where
+each row corresponds to a mixing partition \eqn{c_i}, which is the union of
+the model and output partitions - i.e. each unique boundary is included.
+Within each row, there is a \code{weight} and \code{relpop} entry, corresponding to
+
+\deqn{
+\textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
+}
+
+\deqn{
+\textrm{relpop}_i = \int_{c_i} \rho(x)\text{d}x
+}
+
+where \eqn(f(x)) corresponds to the \code{f_param} argument and \eqn(\rho(x))
+corresponds to the \code{f_pop} argument.
+
+This mixing table is used in the \code{\link[=blend]{blend()}} and \code{\link[=distill]{distill()}} functions.
+
+When \code{blend}ing, the appropriately weighted parameter for a model partition
+is the sum of \eqn(\textrm{weight}_i) divided by the \eqn(\textrm{relpop}_i)
+associated with mixing partition(s) in that model partition. This corresponds
+to the properly, population weighted average of that parameter over the
+partition.
+
+When \code{distill}ing, model outcomes associated with weighted parameter from
+partition \eqn{j} are distributed to the output partition \eqn{i} by the sum
+of weights in mixing partitions in both \eqn{j} and \eqn{i} divided by the
+total weight in \eqn{j}. This corresponds to proportional allocation
+according to Bayes rule: the outcome in the model partition was relatively
+more likely in the higher weight mixing partition.
 }
 \examples{
 ifr_levin <- function(age_in_years) {
@@ -62,4 +101,9 @@ age_pyramid$weight[102] <- 0
 # flat age distribution, then 1\% annual deaths, no one lives past 101
 ifr_alembic <- alembic(ifr_levin, age_pyramid, age_limits, 0:101)
 
+}
+\seealso{
+\code{\link[=blend]{blend()}}
+
+\code{\link[=distill]{distill()}}
 }
