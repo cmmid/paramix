@@ -64,20 +64,19 @@ the model and output partitions - i.e. each unique boundary is included.
 Within each row, there is a \code{weight} and \code{relpop} entry, corresponding to
 
 \deqn{
-\textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
+\text{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
 }
 
 \deqn{
-\textrm{relpop}_i = \int_{c_i} \rho(x)\text{d}x
+\text{relpop}_i = \int_{c_i} \rho(x)\text{d}x
 }
 
-where \eqn(f(x)) corresponds to the \code{f_param} argument and \eqn(\rho(x))
-corresponds to the \code{f_pop} argument.
+where \eqn{f(x)} corresponds to the \code{f_param} argument and \eqn{\rho(x)} corresponds to the \code{f_pop} argument.
 
 This mixing table is used in the \code{\link[=blend]{blend()}} and \code{\link[=distill]{distill()}} functions.
 
 When \code{blend}ing, the appropriately weighted parameter for a model partition
-is the sum of \eqn(\textrm{weight}_i) divided by the \eqn(\textrm{relpop}_i)
+is the sum of \eqn{\textrm{weight}_i} divided by the \eqn{\textrm{relpop}_i}
 associated with mixing partition(s) in that model partition. This corresponds
 to the properly, population weighted average of that parameter over the
 partition.
@@ -89,6 +88,7 @@ total weight in \eqn{j}. This corresponds to proportional allocation
 according to Bayes rule: the outcome in the model partition was relatively
 more likely in the higher weight mixing partition.
 }
+
 \examples{
 ifr_levin <- function(age_in_years) {
   (10^(-3.27 + 0.0524 * age_in_years))/100
