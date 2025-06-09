@@ -125,12 +125,24 @@ each row corresponds to a mixing partition \(c_i\), which is the union of
 the model and output partitions - i.e. each unique boundary is included.
 Within each row, there is a <code>weight</code> and <code>relpop</code> entry, corresponding to</p>
 <p>$$
-\textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
+\text{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
 $$</p>
 <p>$$
-\textrm{relpop}_i = \int_{c_i} \rho(x)\text{d}x
+\text{relpop}_i = \int_{c_i} \rho(x)\text{d}x
 $$</p>
-<p>where (f(x)) corresponds to the \code{f_param</p>
+<p>where \(f(x)\) corresponds to the <code>f_param</code> argument and \(\rho(x)\) corresponds to the <code>f_pop</code> argument.</p>
+<p>This mixing table is used in the <code><a href="blend.html">blend()</a></code> and <code><a href="distill.html">distill()</a></code> functions.</p>
+<p>When <code>blend</code>ing, the appropriately weighted parameter for a model partition
+is the sum of \(\textrm{weight}_i\) divided by the \(\textrm{relpop}_i\)
+associated with mixing partition(s) in that model partition. This corresponds
+to the properly, population weighted average of that parameter over the
+partition.</p>
+<p>When <code>distill</code>ing, model outcomes associated with weighted parameter from
+partition \(j\) are distributed to the output partition \(i\) by the sum
+of weights in mixing partitions in both \(j\) and \(i\) divided by the
+total weight in \(j\). This corresponds to proportional allocation
+according to Bayes rule: the outcome in the model partition was relatively
+more likely in the higher weight mixing partition.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
