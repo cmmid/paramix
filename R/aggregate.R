@@ -56,18 +56,17 @@ vec_integrate <- function(f, lowers, uppers, ...) {
 #' \deqn{
 #' \textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
 #' }
-#'
 #' \deqn{
 #' \textrm{relpop}_i = \int_{c_i} \rho(x)\text{d}x
 #' }
 #'
-#' where \eqn(f(x)) corresponds to the `f_param` argument and \eqn(\rho(x))
+#' where \eqn{f(x)} corresponds to the `f_param` argument and \eqn{\rho(x)}
 #' corresponds to the `f_pop` argument.
 #'
 #' This mixing table is used in the [blend()] and [distill()] functions.
 #'
 #' When `blend`ing, the appropriately weighted parameter for a model partition
-#' is the sum of \eqn(\textrm{weight}_i) divided by the \eqn(\textrm{relpop}_i)
+#' is the sum of \eqn{\textrm{weight}_i} divided by the \eqn{\textrm{relpop}_i}
 #' associated with mixing partition(s) in that model partition. This corresponds
 #' to the properly, population weighted average of that parameter over the
 #' partition.

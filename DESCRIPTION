@@ -1,6 +1,6 @@
 Package: paramix
 Title: Aggregate and Disaggregate Continuous Parameters for Compartmental Models
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     c(person("Carl", "Pearson", , "carl.ab.pearson@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0003-0701-7860")),
