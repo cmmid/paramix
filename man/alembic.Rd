@@ -58,10 +58,11 @@ high-resolution output partitions.
 }
 \details{
 The \code{alembic} function creates a mixing table, which governs the conversion
-between model and output partitions. The mixing table a \code{\link[=data.table]{data.table()}} where
-each row corresponds to a mixing partition \eqn{c_i}, which is the union of
-the model and output partitions - i.e. each unique boundary is included.
-Within each row, there is a \code{weight} and \code{relpop} entry, corresponding to
+between model and output partitions. The mixing table a
+\code{\link[data.table:data.table]{data.table::data.table()}} where each row corresponds to a mixing partition
+\eqn{c_i}, which is the union of the model and output partitions - i.e. each
+unique boundary is included. Within each row, there is a \code{weight} and
+\code{relpop} entry, corresponding to
 
 \deqn{
 \textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x

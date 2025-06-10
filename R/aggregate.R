@@ -48,10 +48,11 @@ vec_integrate <- function(f, lowers, uppers, ...) {
 #'
 #' @details
 #' The `alembic` function creates a mixing table, which governs the conversion
-#' between model and output partitions. The mixing table a [data.table()] where
-#' each row corresponds to a mixing partition \eqn{c_i}, which is the union of
-#' the model and output partitions - i.e. each unique boundary is included.
-#' Within each row, there is a `weight` and `relpop` entry, corresponding to
+#' between model and output partitions. The mixing table a
+#' [data.table::data.table()] where each row corresponds to a mixing partition
+#' \eqn{c_i}, which is the union of the model and output partitions - i.e. each
+#' unique boundary is included. Within each row, there is a `weight` and
+#' `relpop` entry, corresponding to
 #'
 #' \deqn{
 #' \textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
