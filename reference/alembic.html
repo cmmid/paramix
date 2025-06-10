@@ -121,10 +121,11 @@ to the <code><a href="blend.html">blend()</a></code> and <code><a href="distill.
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The <code>alembic</code> function creates a mixing table, which governs the conversion
-between model and output partitions. The mixing table a <code>data.table()</code> where
-each row corresponds to a mixing partition \(c_i\), which is the union of
-the model and output partitions - i.e. each unique boundary is included.
-Within each row, there is a <code>weight</code> and <code>relpop</code> entry, corresponding to</p>
+between model and output partitions. The mixing table a
+<code><a href="https://rdatatable.gitlab.io/data.table/reference/data.table.html" class="external-link">data.table::data.table()</a></code> where each row corresponds to a mixing partition
+\(c_i\), which is the union of the model and output partitions - i.e. each
+unique boundary is included. Within each row, there is a <code>weight</code> and
+<code>relpop</code> entry, corresponding to</p>
 <p>$$
 \textrm{weight}_i = \int_{c_i} f(x)\rho(x)\text{d}x
 $$
