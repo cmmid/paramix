@@ -102,4 +102,19 @@ plot_s <- ggplot(int_dt[!method=='mean_f' & place=='GBR' & pathogen=='SC2']) + a
 
 plots <- plot_p + plot_q + plot_r + plot_s + plot_layout(nrow = 2, axes = 'collect', guides = 'collect')
 
-ggsave(tail(.args, 1), plots, width = 25, height = 14, units = "cm", bg = "white")
+tarfile <- tail(.args, 1)
+
+ggsave_opts <- list(
+  filename = tarfile, plot = plots,
+  width = 25, height = 14, units = "cm", bg = "white"
+)
+
+if (tarfile %like% "tiff$") {
+  ggsave_opts$compression <- "lzw+p"
+  ggsave_opts$dpi <- 600
+  hwratio <- ggsave_opts$height / ggsave_opts$width
+  ggsave_opts$width <- 19
+  ggsave_opts$height <- ggsave_opts$width * hwratio
+}
+
+do.call(ggsave, ggsave_opts)

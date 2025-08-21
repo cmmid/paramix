@@ -31,4 +31,19 @@ p <- ggplot(ts_dt[method == "f_mean"][between(time, 0, 15*7)]) + aes(
   scale_color_intervention() +
   scale_linetype_pathogen()
 
-ggsave(tail(.args, 1), p, width = 25, height = 14, units = "cm", bg = "white")
+tarfile <- tail(.args, 1)
+
+ggsave_opts <- list(
+  filename = tarfile, plot = p,
+  width = 25, height = 14, units = "cm", bg = "white"
+)
+
+if (tarfile %like% "tiff$") {
+  ggsave_opts$compression <- "lzw+p"
+  ggsave_opts$dpi <- 600
+  hwratio <- ggsave_opts$height / ggsave_opts$width
+  ggsave_opts$width <- 19
+  ggsave_opts$height <- ggsave_opts$width * hwratio
+}
+
+do.call(ggsave, ggsave_opts)

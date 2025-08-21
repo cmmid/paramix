@@ -104,6 +104,19 @@ summary_p <- pop_p + ifr_p + inc_p + plot_layout(
 ) +  plot_annotation(tag_levels = 'a', tag_prefix = '(',
                      tag_suffix = ')  ')
 
-ggsave(
-  tail(.args, 1), summary_p, height = 11, width = 8, units = "in", bg = "white"
+tarfile <- tail(.args, 1)
+
+ggsave_opts <- list(
+  filename = tarfile, plot = summary_p,
+  height = 11, width = 8, units = "in", bg = "white"
 )
+
+if (tarfile %like% "tiff$") {
+  ggsave_opts$compression <- "lzw+p"
+  ggsave_opts$dpi <- 600
+  hwratio <- ggsave_opts$height / ggsave_opts$width
+  ggsave_opts$width <- 19
+  ggsave_opts$height <- ggsave_opts$width * hwratio
+}
+
+do.call(ggsave, ggsave_opts)
